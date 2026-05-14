@@ -62,6 +62,23 @@ CREATE TABLE public.personas_reporte (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE public.reporte_personas (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporte_id uuid NOT NULL,
+  tipo_reporte text NOT NULL CHECK (tipo_reporte IN ('vehiculo', 'embarcacion')),
+  nombre text NOT NULL,
+  nombre_normalizado text NOT NULL,
+  cedula text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.reporte_persona_roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporte_persona_id uuid NOT NULL REFERENCES public.reporte_personas(id) ON DELETE CASCADE,
+  rol text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Motivos de reporte
 CREATE TABLE public.reporte_motivos (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,6 +101,8 @@ CREATE TABLE public.reporte_sitios (
 ALTER TABLE public.reportes_vehiculo ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reportes_embarcacion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.personas_reporte ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reporte_personas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reporte_persona_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reporte_motivos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reporte_sitios ENABLE ROW LEVEL SECURITY;
 
@@ -102,6 +121,16 @@ CREATE POLICY "auth_select" ON public.personas_reporte FOR SELECT TO authenticat
 CREATE POLICY "auth_insert" ON public.personas_reporte FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "auth_delete" ON public.personas_reporte FOR DELETE TO authenticated USING (true);
 
+CREATE POLICY "auth_select" ON public.reporte_personas FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_insert" ON public.reporte_personas FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "auth_update" ON public.reporte_personas FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "auth_delete" ON public.reporte_personas FOR DELETE TO authenticated USING (true);
+
+CREATE POLICY "auth_select" ON public.reporte_persona_roles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_insert" ON public.reporte_persona_roles FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "auth_update" ON public.reporte_persona_roles FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "auth_delete" ON public.reporte_persona_roles FOR DELETE TO authenticated USING (true);
+
 CREATE POLICY "auth_select" ON public.reporte_motivos FOR SELECT TO authenticated USING (true);
 CREATE POLICY "auth_insert" ON public.reporte_motivos FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "auth_delete" ON public.reporte_motivos FOR DELETE TO authenticated USING (true);
@@ -113,3 +142,12 @@ CREATE POLICY "auth_delete" ON public.reporte_sitios FOR DELETE TO authenticated
 -- Triggers for updated_at
 CREATE TRIGGER update_reportes_vehiculo_updated_at BEFORE UPDATE ON public.reportes_vehiculo FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_reportes_embarcacion_updated_at BEFORE UPDATE ON public.reportes_embarcacion FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE INDEX reporte_personas_reporte_tipo_idx
+  ON public.reporte_personas (reporte_id, tipo_reporte);
+
+CREATE INDEX reporte_personas_nombre_normalizado_idx
+  ON public.reporte_personas (nombre_normalizado);
+
+CREATE INDEX reporte_persona_roles_persona_idx
+  ON public.reporte_persona_roles (reporte_persona_id);
