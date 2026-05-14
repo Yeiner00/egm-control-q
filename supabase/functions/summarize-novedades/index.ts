@@ -5,12 +5,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const geminiChatCompletionsUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+
+const getGeminiApiKey = () => {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+  return apiKey;
+};
+
+const getGeminiTextModel = () =>
+  Deno.env.get("GEMINI_TEXT_MODEL") || "gemini-2.5-flash-lite";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const geminiApiKey = getGeminiApiKey();
+    const geminiModel = getGeminiTextModel();
 
     const { novedades, persona, tipo, reportNumbers, totalKm, embarcaciones, totalMillas } = await req.json();
     if (!novedades || !Array.isArray(novedades) || novedades.length === 0) {
@@ -108,14 +119,14 @@ Responde EXACTAMENTE en este formato JSON (sin texto adicional):
 Incluye un emoji relevante antes de cada actividad. Responde en español.`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(geminiChatCompletionsUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${geminiApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: geminiModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Novedades (${totalReportes} reportes):\n${text}` },
