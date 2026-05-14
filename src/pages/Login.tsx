@@ -44,7 +44,7 @@ const Login = () => {
               <Anchor className="h-6 w-6 text-white" />
             </div>
             <div className="space-y-2">
-              <h1 className="text-2xl font-bold tracking-tight">E.G.M Control</h1>
+              <h1 className="text-2xl font-bold tracking-tight">EGM Admin</h1>
               <p className="text-sm leading-6 text-white/74">
                 No oficial
               </p>
