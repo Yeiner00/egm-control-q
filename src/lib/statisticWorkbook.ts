@@ -613,6 +613,8 @@ export const patchStatisticWorkbookBytes = (templateBytes: Uint8Array, input: St
     .filter((sheet) => patchResult.sheetNames.includes(sheet.name))
     .forEach((sheet) => {
       const patches = buildSheetPatches(patchResult.accumulators.get(sheet.name) || { reportNumbers: {}, numbers: {} });
+      patches.numbers.B5 = stationStartSerial;
+      patches.numbers.G5 = stationEndSerial;
       applySheetPatches(zip, sheet.path, patches.text, patches.numbers);
     });
 

@@ -71,6 +71,9 @@ interface Props {
 
 const MAX_ACOMPANANTES = 4;
 const MAX_MOTIVOS = 10;
+const siteRowGridClass = "sm:grid-cols-[minmax(0,1fr)_minmax(0,0.5fr)_minmax(0,0.9fr)_2rem]";
+const compactRowInputClass = "min-w-0 h-8 lg:h-8 px-3 py-0 text-sm";
+const compactDeleteButtonClass = "h-8 w-8 shrink-0 px-0";
 const VEHICLE_BITACORA_BY_UNIT: Record<string, string> = {
   "SNG-08": "02",
   "SNG-16": "03",
@@ -660,7 +663,7 @@ const VehicleReportForm = ({
               <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sitios de interes visitados</Label>
               <Button type="button" variant="ghost" size="sm" onClick={addSitio}><Plus className="h-3 w-3 mr-1" />Agregar</Button>
             </div>
-            <div className="hidden grid-cols-[minmax(9rem,1fr)_5.5rem_minmax(11rem,1.15fr)_2.5rem] gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:grid">
+            <div className={cn("hidden gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:grid", siteRowGridClass)}>
               <span>Nombre</span>
               <span>Zona</span>
               <span>Posicion</span>
@@ -670,17 +673,17 @@ const VehicleReportForm = ({
               const sitioPending = hasEmptyReportValue([s.nombre_sitio, s.zona, s.posicion]);
               return (
                 <div key={i} className="space-y-1">
-                  <div className="grid gap-1 sm:grid-cols-[minmax(9rem,1fr)_5.5rem_minmax(11rem,1.15fr)_2.5rem]">
+                  <div className={cn("grid gap-1", siteRowGridClass)}>
                     <ReportComboboxInput
                       value={s.nombre_sitio}
                       onChange={(value) => updateSitioNombre(i, value)}
                       options={siteOptions.map((option) => option.nombre_sitio)}
                       placeholder="Nombre"
-                      className={pendingInputClass(s.nombre_sitio, "h-8 lg:h-8 px-3 py-0 text-sm")}
+                      className={pendingInputClass(s.nombre_sitio, compactRowInputClass)}
                     />
-                    <Input placeholder="Zona" value={s.zona} onChange={(event) => updateSitio(i, "zona", event.target.value)} className={pendingInputClass(s.zona, "h-8 lg:h-8 px-3 py-0 text-sm")} />
-                    <Input placeholder="Posicion" value={s.posicion} onChange={(event) => updateSitio(i, "posicion", event.target.value)} className={pendingInputClass(s.posicion, "h-8 lg:h-8 px-3 py-0 text-sm")} />
-                    <Button type="button" variant="ghost" size="sm" onClick={() => removeSitio(i)}><Trash2 className="h-3 w-3" /></Button>
+                    <Input placeholder="Zona" value={s.zona} onChange={(event) => updateSitio(i, "zona", event.target.value)} className={pendingInputClass(s.zona, compactRowInputClass)} />
+                    <Input placeholder="Posicion" value={s.posicion} onChange={(event) => updateSitio(i, "posicion", event.target.value)} className={pendingInputClass(s.posicion, compactRowInputClass)} />
+                    <Button type="button" variant="ghost" size="sm" className={compactDeleteButtonClass} aria-label="Eliminar sitio visitado" onClick={() => removeSitio(i)}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                   <PendingHint show={sitioPending} />
                 </div>

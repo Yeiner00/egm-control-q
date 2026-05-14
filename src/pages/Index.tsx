@@ -189,7 +189,7 @@ const Index = () => {
                 </Button>
                 <div className="app-title-lockup">
                   <span className="app-title">
-                    Administracion reportes
+                    Administracion
                   </span>
                   <span className="app-title-status">
                     No oficial
@@ -267,7 +267,7 @@ const Index = () => {
                   <Anchor className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <span className="block truncate text-sm font-bold tracking-[0.08em] text-white">Administracion reportes</span>
+                  <span className="block truncate text-sm font-bold tracking-[0.08em] text-white">Administracion</span>
                   <span className="block text-[0.72rem] font-bold uppercase tracking-[0.18em] text-teal-light">No oficial</span>
                 </div>
               </div>

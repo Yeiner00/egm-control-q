@@ -89,6 +89,8 @@ describe("patchStatisticWorkbookBytes", () => {
     expect(station.I5.v).toBe(46120);
 
     const vehicleSheet = workbook.Sheets["SNG-16"];
+    expect(vehicleSheet.B5.v).toBe(46113);
+    expect(vehicleSheet.G5.v).toBe(46120);
     expect(vehicleSheet.B7.v).toBe("123/321");
     expect(vehicleSheet.B11.v).toBe(30);
     expect(vehicleSheet.B17.v).toBe(8);
@@ -102,6 +104,8 @@ describe("patchStatisticWorkbookBytes", () => {
     expect(vehicleSheet.J11.f).toBe("SUM(B11:I11)");
 
     const boatSheet = workbook.Sheets["GC-38-22"];
+    expect(boatSheet.B5.v).toBe(46113);
+    expect(boatSheet.G5.v).toBe(46120);
     expect(boatSheet.C7.v).toBe("50");
     expect(boatSheet.C10.v).toBe(12);
     expect(boatSheet.C13.v).toBe(2 / 24);

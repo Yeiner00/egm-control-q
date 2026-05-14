@@ -7,6 +7,40 @@ const corsHeaders = {
 
 const geminiChatCompletionsUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
+const getRetryAfterMs = (response: Response) => {
+  const retryAfter = response.headers.get("Retry-After");
+  if (!retryAfter) return 15000;
+
+  const seconds = Number(retryAfter);
+  if (Number.isFinite(seconds)) return Math.max(1000, seconds * 1000);
+
+  const retryDate = Date.parse(retryAfter);
+  if (Number.isFinite(retryDate)) return Math.max(1000, retryDate - Date.now());
+
+  return 15000;
+};
+
+const aiRateLimitResponse = (response: Response) =>
+  new Response(JSON.stringify({
+    error: "Se alcanzó el límite temporal de IA. Intente continuar en unos minutos.",
+    code: "AI_RATE_LIMITED",
+    retryAfterMs: getRetryAfterMs(response),
+    retryable: true,
+  }), {
+    status: 429,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+const aiCreditsResponse = () =>
+  new Response(JSON.stringify({
+    error: "Créditos insuficientes para usar IA.",
+    code: "AI_CREDITS_REQUIRED",
+    retryable: false,
+  }), {
+    status: 402,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 const getGeminiApiKey = () => {
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
@@ -123,17 +157,11 @@ Reglas estrictas:
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de solicitudes excedido." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return aiRateLimitResponse(response);
       }
 
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Creditos insuficientes." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return aiCreditsResponse();
       }
 
       const text = await response.text();

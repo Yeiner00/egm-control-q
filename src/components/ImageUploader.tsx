@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, Camera, Loader2, ImageIcon } from "lucide-react";
+import { createAiServiceError, runAiTask } from "@/lib/aiRateLimit";
 import type { ZarpeFormData } from "@/components/ZarpesTab";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 const ImageUploader = ({ onExtracted, showIntroHeader = true }: Props) => {
   const [extracting, setExtracting] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [aiMessage, setAiMessage] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
@@ -30,6 +32,7 @@ const ImageUploader = ({ onExtracted, showIntroHeader = true }: Props) => {
     setPreview(previewUrl);
 
     setExtracting(true);
+    setAiMessage("");
     try {
       const formData = new FormData();
       formData.append("image", file);
@@ -40,23 +43,32 @@ const ImageUploader = ({ onExtracted, showIntroHeader = true }: Props) => {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-zarpe`,
+      const result = await runAiTask(
+        async () => {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-zarpe`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: formData,
+            },
+          );
+
+          const payload = await response.json().catch(() => null);
+          if (!response.ok) {
+            throw createAiServiceError(payload || { error: `Error ${response.status}` }, response.status);
+          }
+
+          return payload;
+        },
         {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: formData,
-        }
+          label: "Extraer zarpe",
+          onStatus: (status) => setAiMessage(status.message),
+        },
       );
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Error del servidor" }));
-        throw new Error(err.error || `Error ${response.status}`);
-      }
-
-      const result = await response.json();
       if (result.data) {
         onExtracted(result.data);
         toast.success("Datos extraídos correctamente");
@@ -68,6 +80,7 @@ const ImageUploader = ({ onExtracted, showIntroHeader = true }: Props) => {
       toast.error("Error de extracción", { description: msg });
     } finally {
       setExtracting(false);
+      setAiMessage("");
       setPreview(null);
       URL.revokeObjectURL(previewUrl);
     }
@@ -111,7 +124,7 @@ const ImageUploader = ({ onExtracted, showIntroHeader = true }: Props) => {
             <div className="absolute inset-0 flex items-center justify-center bg-navy/15 backdrop-blur-[2px]">
               <div className="operational-loader bg-card/96">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                <span>Extrayendo datos del documento...</span>
+                <span>{aiMessage || "Extrayendo datos del documento..."}</span>
               </div>
             </div>
           </div>

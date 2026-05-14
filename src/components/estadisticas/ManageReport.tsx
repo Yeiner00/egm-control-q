@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { normalizeName } from "@/lib/normalizeName";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -386,7 +386,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     load();
   }, [selectedId, table, tipo]);
 
-  const startEdit = () => {
+  const startEdit = useCallback(() => {
     if (!preview) return;
 
     if (tipo === "vehiculo") {
@@ -482,12 +482,12 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     }
 
     setEditing(true);
-  };
+  }, [embarcacionesInspeccionadas, motivos, personas, preview, sitios, tipo]);
 
   useEffect(() => {
     if (!selectedId || !preview || preview.id !== selectedId) return;
     startEdit();
-  }, [selectedId, preview]);
+  }, [selectedId, preview, startEdit]);
 
   const saveEdit = async () => {
     setSaving(true);

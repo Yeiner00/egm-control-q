@@ -8,6 +8,7 @@ import { Upload, Loader2, FileSpreadsheet, ChevronDown, ChevronUp, Save, X, Aler
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { createAiServiceError, createAiServiceErrorFromSupabaseFunctionError, isAiRateLimitError, runAiTask, type AiTaskStatus } from "@/lib/aiRateLimit";
 import VehicleReportForm, { type VehicleFormData } from "./VehicleReportForm";
 import BoatReportForm, { type BoatFormData } from "./BoatReportForm";
 import {
@@ -29,13 +30,20 @@ interface ReportUploaderProps {
 
 export interface BatchItem {
   fileName: string;
-  status: "pending" | "processing" | "ready" | "error" | "saved" | "save-error";
+  status: "pending" | "waiting" | "processing" | "ready" | "error" | "saved" | "save-error";
   error?: string;
+  aiMessage?: string;
   data?: ExtractedReportData;
   tipo?: ExtractedReportType;
   vehicleData?: VehicleFormData;
   boatData?: BoatFormData;
 }
+
+const aiStatusToBatchStatus = (status: AiTaskStatus["status"]): BatchItem["status"] =>
+  status === "queued" || status === "waiting" || status === "rate_limited" ? "waiting" : "processing";
+
+const MAX_REPORT_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_REPORT_EXTENSIONS = new Set(["xlsx", "xls"]);
 
 const ReportUploader = ({
   onExtracted,
@@ -51,10 +59,22 @@ const ReportUploader = ({
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [savingAll, setSavingAll] = useState(false);
   const [saveResult, setSaveResult] = useState<{ saved: number; errors: { index: number; reason: string }[] } | null>(null);
+  const [singleAiMessage, setSingleAiMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = async (file: File): Promise<{ data?: ExtractedReportData; error?: string }> => {
+  const processFile = async (
+    file: File,
+    onAiStatus?: (status: AiTaskStatus) => void,
+  ): Promise<{ data?: ExtractedReportData; error?: string; rateLimited?: boolean }> => {
     try {
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      if (!extension || !ALLOWED_REPORT_EXTENSIONS.has(extension)) {
+        return { error: "Solo se permiten archivos Excel .xlsx o .xls" };
+      }
+      if (file.size > MAX_REPORT_FILE_SIZE_BYTES) {
+        return { error: "El archivo supera el limite de 5 MB" };
+      }
+
       const buffer = await file.arrayBuffer();
       const XLSX = await loadXlsx();
       const wb = XLSX.read(buffer, { type: "array" });
@@ -67,17 +87,30 @@ const ReportUploader = ({
       }
       if (!textContent.trim()) return { error: "Archivo vacío" };
 
-      const { data, error } = await supabase.functions.invoke("extract-report", {
-        body: { content: textContent },
-      });
+      const data = await runAiTask(
+        async () => {
+          const result = await supabase.functions.invoke("extract-report", {
+            body: { content: textContent },
+          });
+          if (result.error) throw await createAiServiceErrorFromSupabaseFunctionError(result.error, "Error de extraccion");
+          if (result.data?.error) throw createAiServiceError(result.data);
+          return result.data;
+        },
+        {
+          label: `Extraer ${file.name}`,
+          onStatus: onAiStatus,
+        },
+      );
       if (data?.data || workbookData) {
         return { data: mergeExtractedReportData(data?.data, workbookData) || undefined };
       }
-      if (error) return { error: error.message || "Error de extracción" };
       if (data?.data) return { data: data.data };
       return { error: "No se pudieron extraer datos" };
     } catch (err) {
-      return { error: err instanceof Error ? err.message : "Error al procesar" };
+      return {
+        error: err instanceof Error ? err.message : "Error al procesar",
+        rateLimited: isAiRateLimitError(err),
+      };
     }
   };
 
@@ -85,8 +118,10 @@ const ReportUploader = ({
     if (files.length === 1) {
       // Single file: use original flow
       setLoading(true);
-      const result = await processFile(files[0]);
+      setSingleAiMessage("");
+      const result = await processFile(files[0], (status) => setSingleAiMessage(status.message));
       setLoading(false);
+      setSingleAiMessage("");
       if (inputRef.current) inputRef.current.value = "";
       if (result.error) {
         toast.error("Error", { description: result.error });
@@ -108,41 +143,51 @@ const ReportUploader = ({
     }));
     setBatchItems([...items]);
 
-    // Process in batches of 3
     const fileArr = Array.from(files);
-    for (let i = 0; i < fileArr.length; i += 3) {
-      const batch = fileArr.slice(i, i + 3);
-      const batchIndices = batch.map((_, j) => i + j);
-
-      // Mark as processing
+    for (let i = 0; i < fileArr.length; i += 1) {
       setBatchItems(prev => {
         const next = [...prev];
-        batchIndices.forEach(idx => { next[idx] = { ...next[idx], status: "processing" }; });
+        next[i] = { ...next[i], status: "processing", aiMessage: "Preparando archivo para IA." };
         return next;
       });
 
-      const results = await Promise.all(batch.map(f => processFile(f)));
-
-      setBatchItems(prev => {
-        const next = [...prev];
-        results.forEach((result, j) => {
-          const idx = batchIndices[j];
-          if (result.error) {
-            next[idx] = { ...next[idx], status: "error", error: result.error };
-          } else if (result.data) {
-            const tipo = result.data.tipo as ExtractedReportType;
-            next[idx] = {
-              ...next[idx],
-              status: "ready",
-              data: result.data,
-              tipo,
-              vehicleData: tipo === "vehiculo" ? mapToVehicleFormData(result.data) : undefined,
-              boatData: tipo === "embarcacion" ? mapToBoatFormData(result.data) : undefined,
-            };
-          }
+      const result = await processFile(fileArr[i], (status) => {
+        setBatchItems(prev => {
+          const next = [...prev];
+          next[i] = {
+            ...next[i],
+            status: aiStatusToBatchStatus(status.status),
+            aiMessage: status.message,
+          };
+          return next;
         });
+      });
+
+      setBatchItems(prev => {
+        const next = [...prev];
+        if (result.error) {
+          next[i] = { ...next[i], status: "error", error: result.error, aiMessage: undefined };
+        } else if (result.data) {
+          const tipo = result.data.tipo as ExtractedReportType;
+          next[i] = {
+            ...next[i],
+            status: "ready",
+            aiMessage: undefined,
+            data: result.data,
+            tipo,
+            vehicleData: tipo === "vehiculo" ? mapToVehicleFormData(result.data) : undefined,
+            boatData: tipo === "embarcacion" ? mapToBoatFormData(result.data) : undefined,
+          };
+        }
         return next;
       });
+
+      if (result.rateLimited) {
+        toast.error("Limite temporal de IA", {
+          description: "Se alcanzo el limite temporal de IA. Intente continuar en unos minutos.",
+        });
+        break;
+      }
     }
 
     if (inputRef.current) inputRef.current.value = "";
@@ -192,10 +237,10 @@ const ReportUploader = ({
     setSaveResult(null);
   };
 
-  const processedCount = batchItems.filter(i => i.status !== "pending" && i.status !== "processing").length;
+  const processedCount = batchItems.filter(i => i.status !== "pending" && i.status !== "waiting" && i.status !== "processing").length;
   const totalCount = batchItems.length;
   const readyCount = batchItems.filter(i => i.status === "ready").length;
-  const isProcessing = batchItems.some(i => i.status === "processing" || i.status === "pending");
+  const isProcessing = batchItems.some(i => i.status === "processing" || i.status === "waiting" || i.status === "pending");
 
   if (batchMode) {
     return (
@@ -232,7 +277,7 @@ const ReportUploader = ({
                 <CollapsibleTrigger asChild>
                   <button className="flex w-full items-center justify-between rounded-[calc(var(--radius)-0.08rem)] p-3 text-sm hover:bg-muted/40">
                     <div className="flex items-center gap-2 min-w-0">
-                      {item.status === "processing" && <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />}
+                      {(item.status === "processing" || item.status === "waiting") && <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />}
                       {item.status === "pending" && <div className="h-4 w-4 rounded-full border-2 border-muted-foreground shrink-0" />}
                       {item.status === "ready" && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
                       {item.status === "saved" && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
@@ -243,9 +288,10 @@ const ReportUploader = ({
                       {item.tipo && <Badge variant="outline" className="text-xs">{item.tipo === "vehiculo" ? "Vehículo" : "Embarcación"}</Badge>}
                       {item.vehicleData && <Badge variant="secondary" className="text-xs">#{item.vehicleData.no_reporte}</Badge>}
                       {item.boatData && <Badge variant="secondary" className="text-xs">#{item.boatData.no_reporte}</Badge>}
+                      {item.aiMessage && <span className="hidden text-xs text-muted-foreground sm:inline">{item.aiMessage}</span>}
                       {(item.status === "error" || item.status === "save-error") && <span className="text-xs text-destructive">{item.error}</span>}
                       {item.status === "saved" && <span className="text-xs text-green-600">Guardado</span>}
-                      {item.status !== "processing" && item.status !== "pending" && item.status !== "saved" && (
+                      {item.status !== "processing" && item.status !== "waiting" && item.status !== "pending" && item.status !== "saved" && (
                         <span
                           role="button"
                           tabIndex={0}
@@ -385,7 +431,7 @@ const ReportUploader = ({
           ) : (
             <Upload className="h-4 w-4 mr-2" />
           )}
-          {loading ? "Procesando..." : "Seleccionar Archivos"}
+          {loading ? (singleAiMessage || "Procesando...") : "Seleccionar Archivos"}
         </Button>
       </div>
       <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
