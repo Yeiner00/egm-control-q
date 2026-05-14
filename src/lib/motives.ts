@@ -16,6 +16,20 @@ export interface NormalizedMotive {
   motivo_key: string;
 }
 
+export interface VehicleMotiveCounts {
+  controlNarcotrafico: number;
+  controlMigracionIlegal: number;
+  seguridadCiudadana: number;
+  proteccionBanistas: number;
+  pescaIlegal: number;
+}
+
+interface ReportMotiveForCounts {
+  reporte_id: string;
+  motivo?: string | null;
+  motivo_key?: string | null;
+}
+
 const CATEGORIES: Array<{ label: string; patterns: RegExp[] }> = [
   {
     label: "Control migratorio",
@@ -116,6 +130,57 @@ export const normalizeMotives = (motives: string[]): NormalizedMotive[] => {
     });
 
   return [...grouped.values()];
+};
+
+const VEHICLE_MOTIVE_COUNT_KEYS: Record<keyof VehicleMotiveCounts, string[]> = {
+  controlNarcotrafico: ["control de narcotrafico"],
+  controlMigracionIlegal: ["control migratorio", "control migracion ilegal"],
+  seguridadCiudadana: ["seguridad ciudadana"],
+  proteccionBanistas: ["proteccion a banistas", "proteccion de banistas"],
+  pescaIlegal: ["pesca ilegal"],
+};
+
+const getMotiveKeysForCount = (motive: ReportMotiveForCounts) => {
+  const keys = new Set<string>();
+
+  [motive.motivo_key, motive.motivo].forEach((value) => {
+    const key = normalizeMotiveKey(value);
+    if (key) keys.add(key);
+  });
+
+  if (motive.motivo) {
+    normalizeMotives([motive.motivo]).forEach((normalized) => {
+      keys.add(normalized.motivo_key);
+    });
+  }
+
+  return keys;
+};
+
+export const countVehicleMotiveReports = (motives: ReportMotiveForCounts[]): VehicleMotiveCounts => {
+  const reportIdsByCount = Object.fromEntries(
+    Object.keys(VEHICLE_MOTIVE_COUNT_KEYS).map((key) => [key, new Set<string>()]),
+  ) as Record<keyof VehicleMotiveCounts, Set<string>>;
+
+  motives.forEach((motive) => {
+    if (!motive.reporte_id) return;
+
+    const motiveKeys = getMotiveKeysForCount(motive);
+
+    Object.entries(VEHICLE_MOTIVE_COUNT_KEYS).forEach(([countKey, matchingKeys]) => {
+      if (matchingKeys.some((matchingKey) => motiveKeys.has(matchingKey))) {
+        reportIdsByCount[countKey as keyof VehicleMotiveCounts].add(motive.reporte_id);
+      }
+    });
+  });
+
+  return {
+    controlNarcotrafico: reportIdsByCount.controlNarcotrafico.size,
+    controlMigracionIlegal: reportIdsByCount.controlMigracionIlegal.size,
+    seguridadCiudadana: reportIdsByCount.seguridadCiudadana.size,
+    proteccionBanistas: reportIdsByCount.proteccionBanistas.size,
+    pescaIlegal: reportIdsByCount.pescaIlegal.size,
+  };
 };
 
 export const buildReportMotiveRows = (

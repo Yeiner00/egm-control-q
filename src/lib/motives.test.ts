@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeMotiveKey, normalizeMotives } from "./motives";
+import { countVehicleMotiveReports, normalizeMotiveKey, normalizeMotives } from "./motives";
 
 describe("normalizeMotiveKey", () => {
   it("normalizes case, accents and punctuation", () => {
@@ -28,5 +28,76 @@ describe("normalizeMotives", () => {
       "Control migratorio",
       "Pesca ilegal",
     ]);
+  });
+});
+
+describe("countVehicleMotiveReports", () => {
+  it("counts vehicle motives by report and ignores duplicated motives in the same report", () => {
+    const reportIds = Array.from({ length: 16 }, (_, index) => `report-${index + 1}`);
+    const motives = [
+      ...reportIds.slice(0, 6).map((reporte_id) => ({
+        reporte_id,
+        motivo: "Control de narcotráfico",
+        motivo_key: "control de narcotrafico",
+      })),
+      {
+        reporte_id: reportIds[0],
+        motivo: "Control de narcotráfico",
+        motivo_key: "control de narcotrafico",
+      },
+      {
+        reporte_id: reportIds[0],
+        motivo: "Pesca ilegal",
+        motivo_key: "pesca ilegal",
+      },
+      {
+        reporte_id: reportIds[6],
+        motivo: "Pesca ilegal",
+        motivo_key: "pesca ilegal",
+      },
+      {
+        reporte_id: reportIds[7],
+        motivo: "PATRULLAJE PARA EL CONTROL PESCA ILEGAL",
+        motivo_key: null,
+      },
+      {
+        reporte_id: reportIds[8],
+        motivo: "Protección a bañistas",
+        motivo_key: "proteccion a banistas",
+      },
+      {
+        reporte_id: reportIds[9],
+        motivo: "Protección de bañistas",
+        motivo_key: "proteccion de banistas",
+      },
+      {
+        reporte_id: reportIds[9],
+        motivo: "Protección a bañistas",
+        motivo_key: "proteccion a banistas",
+      },
+      {
+        reporte_id: reportIds[10],
+        motivo: "Seguridad ciudadana",
+        motivo_key: "seguridad ciudadana",
+      },
+      {
+        reporte_id: reportIds[11],
+        motivo: "Control migratorio",
+        motivo_key: "control migratorio",
+      },
+      {
+        reporte_id: reportIds[12],
+        motivo: "Control migración ilegal",
+        motivo_key: "control migracion ilegal",
+      },
+    ];
+
+    expect(countVehicleMotiveReports(motives)).toEqual({
+      controlNarcotrafico: 6,
+      controlMigracionIlegal: 2,
+      seguridadCiudadana: 1,
+      proteccionBanistas: 2,
+      pescaIlegal: 3,
+    });
   });
 });

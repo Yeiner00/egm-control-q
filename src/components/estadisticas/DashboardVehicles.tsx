@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Clock3, FileText, Filter, Loader2, Route, Sparkles } from "lucide-react";
+import { ChevronDown, Clock3, Copy, FileText, Filter, Loader2, Route, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -35,6 +35,8 @@ import {
   loadPeopleNameOptions,
   searchPersonParticipations,
 } from "@/lib/reportPeople";
+import { countVehicleMotiveReports } from "@/lib/motives";
+import { createAiServiceError, createAiServiceErrorFromSupabaseFunctionError, runAiTask } from "@/lib/aiRateLimit";
 import { loadAvailableReportYears } from "@/lib/reportYears";
 import { downloadReportExcel } from "@/lib/reportExcelExport";
 import ProposalReportCard from "./ProposalReportCard";
@@ -58,6 +60,7 @@ const NAME_FILTER_EXCLUDED_ROLES = ["particular", "persona_particular"];
 const GENERIC_ROLES = ["acompanante", "acompañante"];
 
 type VehicleReport = Tables<"reportes_vehiculo">;
+type VehicleMotiveRecord = Pick<Tables<"reporte_motivos">, "reporte_id" | "motivo" | "motivo_key">;
 
 interface DashboardVehiclesProps {
   onEditReport?: (target: { tipo: "vehiculo"; reportId: string }) => void;
@@ -72,11 +75,12 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
   const [personNames, setPersonNames] = useState<string[]>([]);
   const [reports, setReports] = useState<VehicleReport[]>([]);
   const [motivos, setMotivos] = useState<Record<string, string[]>>({});
+  const [motivosForSummary, setMotivosForSummary] = useState<VehicleMotiveRecord[]>([]);
   const [rolesByReport, setRolesByReport] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState("");
-  const [activities, setActivities] = useState<{ activity: string; count: number }[]>([]);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [summaryAiMessage, setSummaryAiMessage] = useState("");
   const [expandedNovedades, setExpandedNovedades] = useState<Set<string>>(new Set());
   const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
   const [printingReportId, setPrintingReportId] = useState("");
@@ -146,7 +150,7 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
     }
     setLoading(true);
     setSummary("");
-    setActivities([]);
+    setMotivosForSummary([]);
     setExpandedNovedades(new Set());
     setRolesByReport({});
     try {
@@ -155,6 +159,7 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
 
       if (!personRecords || personRecords.length === 0) {
         setReports([]);
+        setMotivosForSummary([]);
         setRolesByReport({});
         toast.info("No se encontraron reportes para esa persona");
         setLoading(false);
@@ -182,7 +187,7 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
       const filteredIds = filtered.map((r) => r.id);
       const { data: motivosData } = await supabase
         .from("reporte_motivos")
-        .select("reporte_id, motivo")
+        .select("reporte_id, motivo, motivo_key")
         .eq("tipo_reporte", "vehiculo")
         .in("reporte_id", filteredIds);
 
@@ -194,11 +199,23 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
 
       setReports(filtered);
       setMotivos(motivoMap);
+      setMotivosForSummary((motivosData || []) as VehicleMotiveRecord[]);
       setRolesByReport(reportRolesMap);
     } catch {
       toast.error("Error al buscar reportes");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const copySummary = async () => {
+    if (!summary.trim()) return;
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      toast.success("Resumen copiado");
+    } catch {
+      toast.error("No se pudo copiar el resumen");
     }
   };
 
@@ -209,19 +226,33 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
       return;
     }
     setLoadingSummary(true);
+    setSummaryAiMessage("");
     try {
       const reportNumbers = reports.map((r) => r.no_reporte).join(", ");
       const totalKmVal = reports.reduce((s, r) => s + (r.kilometros_recorridos || 0), 0);
-      const { data, error } = await supabase.functions.invoke("summarize-novedades", {
-        body: { novedades, persona, tipo: "vehiculo", reportNumbers, totalKm: totalKmVal },
-      });
-      if (error) throw error;
+      const vehicleMotiveCounts = countVehicleMotiveReports(motivosForSummary);
+      const data = await runAiTask(
+        async () => {
+          const result = await supabase.functions.invoke("summarize-novedades", {
+            body: { novedades, persona, tipo: "vehiculo", reportNumbers, totalKm: totalKmVal, vehicleMotiveCounts },
+          });
+          if (result.error) throw await createAiServiceErrorFromSupabaseFunctionError(result.error, "Error al generar resumen");
+          if (result.data?.error) throw createAiServiceError(result.data);
+          return result.data;
+        },
+        {
+          label: "Resumen de novedades vehiculo",
+          onStatus: (status) => setSummaryAiMessage(status.message),
+        },
+      );
       setSummary(data?.summary || "No se pudo generar resumen");
-      setActivities(data?.activities || []);
-    } catch {
-      toast.error("Error al generar resumen");
+    } catch (error) {
+      toast.error("Error al generar resumen", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLoadingSummary(false);
+      setSummaryAiMessage("");
     }
   };
 
@@ -418,27 +449,27 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
                         <Sparkles className="h-4 w-4" />
                         Resumen IA
                       </h4>
-                      <Button size="sm" variant="outline" onClick={generateSummary} disabled={loadingSummary}>
-                        {loadingSummary ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-                        Generar
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {summary && (
+                          <Button size="sm" variant="outline" onClick={copySummary}>
+                            <Copy className="mr-1 h-3 w-3" />
+                            Copiar
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" onClick={generateSummary} disabled={loadingSummary}>
+                          {loadingSummary ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+                          Generar
+                        </Button>
+                      </div>
                     </div>
                     {summary ? (
                       <p className="whitespace-pre-line text-sm text-muted-foreground">{summary}</p>
+                    ) : loadingSummary && summaryAiMessage ? (
+                      <p className="text-sm text-muted-foreground">{summaryAiMessage}</p>
                     ) : (
                       <p className="text-sm text-muted-foreground">
-                        Genere el resumen para consolidar las novedades y actividades destacadas dentro de este panel.
+                        Genere el resumen para consolidar las novedades dentro de este panel.
                       </p>
-                    )}
-                    {activities.length > 0 && (
-                      <div className="space-y-1">
-                        <h5 className="text-xs font-semibold text-foreground">Actividades destacadas:</h5>
-                        {activities.map((a, i) => (
-                          <div key={i} className="text-sm">
-                            {a.activity}: <span className="font-bold">{a.count} {a.count === 1 ? "vez" : "veces"}</span>
-                          </div>
-                        ))}
-                      </div>
                     )}
                   </div>
                 </div>

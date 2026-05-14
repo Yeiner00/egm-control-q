@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Copy, Download, FileJson, FileSpreadsheet, Loader2, Printer, RotateCcw, Sparkles } from "lucide-react";
+import { AlertCircle, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Copy, FileJson, FileSpreadsheet, Loader2, Printer, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/squadCalendar";
 import { loadAvailableReportYears } from "@/lib/reportYears";
 import { loadReportPeopleByIds, type ReportPersonWithRoles } from "@/lib/reportPeople";
+import { createAiServiceError, createAiServiceErrorFromSupabaseFunctionError, runAiTask } from "@/lib/aiRateLimit";
 import {
   buildStatisticAiPackage,
   parseStatisticAiCells,
@@ -53,6 +54,7 @@ type PreparedStatisticReview = {
   sites: StatisticSiteRecord[];
   people: StatisticReportPersonRecord[];
   templateBytes: Uint8Array;
+  workbookBytes: Uint8Array;
   workbookSummary: StatisticWorkbookSummary;
   novedadesJson: string;
 };
@@ -180,6 +182,7 @@ const EstadisticaTab = () => {
   const [aiResponseText, setAiResponseText] = useState("");
   const [aiRejectedCells, setAiRejectedCells] = useState<StatisticAiRejectedCell[]>([]);
   const [aiAcceptedCells, setAiAcceptedCells] = useState<number | null>(null);
+  const [baseWorkbookBytes, setBaseWorkbookBytes] = useState<Uint8Array | null>(null);
   const [processedWorkbookBytes, setProcessedWorkbookBytes] = useState<Uint8Array | null>(null);
   const [aiProcessingFeedback, setAiProcessingFeedback] = useState<AiProcessingFeedback>(null);
   const [showGeneratedDetails, setShowGeneratedDetails] = useState(false);
@@ -251,6 +254,7 @@ const EstadisticaTab = () => {
     setAiResponseText("");
     setAiRejectedCells([]);
     setAiAcceptedCells(null);
+    setBaseWorkbookBytes(null);
     setProcessedWorkbookBytes(null);
     setAiProcessingFeedback(null);
     setShowGeneratedDetails(false);
@@ -349,6 +353,7 @@ const EstadisticaTab = () => {
       sites,
       people,
       templateBytes,
+      workbookBytes: baseWorkbook.bytes,
       workbookSummary: baseWorkbook.summary,
       novedadesJson: jsonText,
     };
@@ -360,12 +365,13 @@ const EstadisticaTab = () => {
     setMotives(prepared.motives);
     setReportPeople(prepared.people);
     setTemplateBytes(prepared.templateBytes);
+    setBaseWorkbookBytes(prepared.workbookBytes);
     setWorkbookSummary(prepared.workbookSummary);
     setNovedadesJson(prepared.novedadesJson);
     setAiResponseText("");
     setAiRejectedCells([]);
     setAiAcceptedCells(null);
-    setProcessedWorkbookBytes(null);
+    setProcessedWorkbookBytes(mode === "ai" ? prepared.workbookBytes : null);
     setAiProcessingFeedback(null);
     setShowGeneratedDetails(false);
     setEmptyPeriodMessage(null);
@@ -380,7 +386,7 @@ const EstadisticaTab = () => {
     }
 
     if (!jsonText.trim()) {
-      setProcessedWorkbookBytes(null);
+      setProcessedWorkbookBytes(prepared.workbookBytes);
       setAiRejectedCells([]);
       setAiAcceptedCells(null);
       setAiProcessingFeedback({
@@ -402,7 +408,7 @@ const EstadisticaTab = () => {
       setAiAcceptedCells(aiResult.cells.length);
 
       if (aiResult.rejected.length > 0) {
-        setProcessedWorkbookBytes(null);
+        setProcessedWorkbookBytes(prepared.workbookBytes);
         setAiProcessingFeedback({
           type: "error",
           title: "No se pudo activar la descarga",
@@ -413,7 +419,7 @@ const EstadisticaTab = () => {
       }
 
       if (aiResult.cells.length === 0) {
-        setProcessedWorkbookBytes(null);
+        setProcessedWorkbookBytes(prepared.workbookBytes);
         setAiProcessingFeedback({
           type: "warning",
           title: "JSON procesado, pero sin celdas validas",
@@ -445,7 +451,7 @@ const EstadisticaTab = () => {
     } catch (error) {
       setAiRejectedCells([]);
       setAiAcceptedCells(null);
-      setProcessedWorkbookBytes(null);
+      setProcessedWorkbookBytes(prepared.workbookBytes);
       setAiProcessingFeedback({
         type: "error",
         title: "No se pudo procesar el JSON",
@@ -457,12 +463,26 @@ const EstadisticaTab = () => {
 
   const invokeStatisticAi = async (jsonText: string) => {
     const payload = JSON.parse(jsonText);
-    const { data, error } = await supabase.functions.invoke("generate-statistic-cells", {
-      body: { package: payload },
-    });
-
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    const data = await runAiTask(
+      async () => {
+        const result = await supabase.functions.invoke("generate-statistic-cells", {
+          body: { package: payload },
+        });
+        if (result.error) throw await createAiServiceErrorFromSupabaseFunctionError(result.error, "No se pudo invocar la funcion de IA");
+        if (result.data?.error) throw createAiServiceError(result.data);
+        return result.data;
+      },
+      {
+        label: "Generar celdas de estadistica",
+        onStatus: (status) => {
+          setAiProcessingFeedback({
+            type: status.status === "rate_limited" ? "warning" : "warning",
+            title: status.status === "waiting" ? "Esperando cupo de IA" : "Procesando con IA",
+            message: status.message,
+          });
+        },
+      },
+    );
 
     const aiData = data?.data || data;
     if (!aiData) throw new Error("La IA no devolvio una respuesta valida");
@@ -488,14 +508,13 @@ const EstadisticaTab = () => {
         setAiProcessingFeedback({
           type: "warning",
           title: "Procesando con IA",
-          message: "Lovable IA esta leyendo las novedades y preparando las celdas del Excel.",
+          message: "La IA esta leyendo las novedades y preparando las celdas del Excel.",
         });
         const aiJsonText = await invokeStatisticAi(prepared.novedadesJson);
         setAiResponseText(aiJsonText);
         applyAiJsonText(aiJsonText, prepared);
       }
     } catch (error) {
-      setProcessedWorkbookBytes(null);
       setAiProcessingFeedback({
         type: "error",
         title: "No se pudo generar la estadistica",
@@ -520,6 +539,7 @@ const EstadisticaTab = () => {
       sites: [],
       people: reportPeople,
       templateBytes,
+      workbookBytes: baseWorkbookBytes || processedWorkbookBytes || templateBytes,
       workbookSummary,
       novedadesJson,
     });
@@ -558,6 +578,9 @@ const EstadisticaTab = () => {
     }
   };
 
+  const isReview = step === "review";
+  const periodControlsDisabled = isReview || !!loadingGenerationMode;
+
   return (
     <div className="space-y-5 animate-fade-in lg:space-y-4">
       <Card className="overflow-hidden">
@@ -576,95 +599,91 @@ const EstadisticaTab = () => {
           </div>
         </div>
 
-        {step === "select" ? (
-          <div className="space-y-5 p-5 sm:p-6 lg:p-4">
-            <StepBox className="space-y-5">
-              <StepHeading
-                number={1}
-                title="Seleccionar periodo"
-                description="Elija la escuadra, el ano y el bloque oficial de ocho dias."
-              />
+        <div className="space-y-5 p-5 sm:p-6 lg:p-4">
+          <StepBox className="space-y-5">
+            <StepHeading
+              number={1}
+              title="Seleccionar periodo"
+              description="Elija la escuadra, el ano y el bloque oficial de ocho dias."
+            />
 
-              <div className="grid gap-4 lg:grid-cols-[220px_180px_minmax(260px,1fr)_auto] lg:items-end">
-                <div className="space-y-2">
-                  <Label>Escuadra</Label>
-                  <Select value={selectedSquad} onValueChange={(value) => setSelectedSquad(value as SquadType)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="alfa">Escuadra Alfa</SelectItem>
-                      <SelectItem value="bravo">Escuadra Bravo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Ano</Label>
-                  <Select value={selectedYear} onValueChange={setSelectedYear} disabled={loadingYears}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {years.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Periodo de 8 dias</Label>
-                  <Select value={selectedPeriod?.startDate || ""} onValueChange={setSelectedPeriodStart} disabled={periods.length === 0}>
-                    <SelectTrigger><SelectValue placeholder="Seleccione un periodo" /></SelectTrigger>
-                    <SelectContent>
-                      {periods.map((period) => (
-                        <SelectItem key={period.startDate} value={period.startDate}>
-                          {formatPeriodLabel(period)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
-                  <Button type="button" onClick={() => preparePreview("ai")} disabled={!!loadingGenerationMode || !selectedPeriod}>
-                    {loadingGenerationMode === "ai" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Generar con IA
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => preparePreview("manual")} disabled={!!loadingGenerationMode || !selectedPeriod}>
-                    {loadingGenerationMode === "manual" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileJson className="h-4 w-4" />}
-                    Generar manual
-                  </Button>
-                </div>
+            <div className="grid gap-4 lg:grid-cols-[220px_180px_minmax(260px,1fr)_auto] lg:items-end">
+              <div className="space-y-2">
+                <Label>Escuadra</Label>
+                <Select
+                  value={selectedSquad}
+                  onValueChange={(value) => setSelectedSquad(value as SquadType)}
+                  disabled={periodControlsDisabled}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="alfa">Escuadra Alfa</SelectItem>
+                    <SelectItem value="bravo">Escuadra Bravo</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {emptyPeriodMessage && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Semana sin datos</AlertTitle>
-                  <AlertDescription>{emptyPeriodMessage}</AlertDescription>
-                </Alert>
-              )}
-            </StepBox>
+              <div className="space-y-2">
+                <Label>Ano</Label>
+                <Select value={selectedYear} onValueChange={setSelectedYear} disabled={loadingYears || periodControlsDisabled}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <Alert>
-              <CalendarDays className="h-4 w-4" />
-              <AlertTitle>Periodo oficial</AlertTitle>
-              <AlertDescription>
-                Los periodos disponibles salen del calendario 8x8 del sistema. La fecha final se calcula automaticamente.
-              </AlertDescription>
-            </Alert>
-          </div>
-        ) : (
-          <div className="space-y-5 p-5 sm:p-6 lg:p-4">
+              <div className="space-y-2">
+                <Label>Periodo de 8 dias</Label>
+                <Select value={selectedPeriod?.startDate || ""} onValueChange={setSelectedPeriodStart} disabled={periods.length === 0 || periodControlsDisabled}>
+                  <SelectTrigger><SelectValue placeholder="Seleccione un periodo" /></SelectTrigger>
+                  <SelectContent>
+                    {periods.map((period) => (
+                      <SelectItem key={period.startDate} value={period.startDate}>
+                        {formatPeriodLabel(period)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
+                <Button type="button" onClick={() => preparePreview("ai")} disabled={periodControlsDisabled || !selectedPeriod}>
+                  {loadingGenerationMode === "ai" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Generar con IA
+                </Button>
+                <Button type="button" variant="outline" onClick={() => preparePreview("manual")} disabled={periodControlsDisabled || !selectedPeriod}>
+                  {loadingGenerationMode === "manual" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileJson className="h-4 w-4" />}
+                  Generar manual
+                </Button>
+              </div>
+            </div>
+
+            {emptyPeriodMessage && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Semana sin datos</AlertTitle>
+                <AlertDescription>{emptyPeriodMessage}</AlertDescription>
+              </Alert>
+            )}
+          </StepBox>
+
+          {isReview ? (
             <StepBox className="space-y-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <StepHeading
-                  number={1}
-                  title="Periodo seleccionado"
-                  description={`${totalReports} reporte${totalReports === 1 ? "" : "s"} dentro del rango. ${workbookSummary?.usedReports || 0} se mapearon a hojas del Excel.`}
-                />
+                <div className="flex items-start gap-3">
+                  <div className="flex shrink-0 items-center justify-center text-primary">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-base font-semibold text-foreground">Resultado generado</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {totalReports} reporte{totalReports === 1 ? "" : "s"} dentro del rango. {workbookSummary?.usedReports || 0} se mapearon a hojas del Excel.
+                    </p>
+                  </div>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" onClick={resetSelection}>
-                    <RotateCcw className="h-4 w-4" />
-                    Cambiar periodo
-                  </Button>
                   <Button type="button" variant="outline" onClick={exportJson}>
                     <FileJson className="h-4 w-4" />
                     Descargar JSON
@@ -765,7 +784,18 @@ const EstadisticaTab = () => {
               </div>
               )}
             </StepBox>
+          ) : (
+            <Alert>
+              <CalendarDays className="h-4 w-4" />
+              <AlertTitle>Periodo oficial</AlertTitle>
+              <AlertDescription>
+                Los periodos disponibles salen del calendario 8x8 del sistema. La fecha final se calcula automaticamente.
+              </AlertDescription>
+            </Alert>
+          )}
 
+          {isReview && (
+            <>
             {aiRejectedCells.length > 0 && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -785,27 +815,7 @@ const EstadisticaTab = () => {
               </Alert>
             )}
 
-            {generationMode === "ai" ? (
-              <StepBox>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <StepHeading
-                    number={2}
-                    title="Generacion con IA"
-                    description="Lovable IA procesa las novedades y prepara el Excel para descargar."
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" onClick={copyJson}>
-                      <Copy className="h-4 w-4" />
-                      Copiar JSON base
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => setGenerationMode("manual")}>
-                      <FileJson className="h-4 w-4" />
-                      Usar flujo manual
-                    </Button>
-                  </div>
-                </div>
-              </StepBox>
-            ) : (
+            {generationMode === "manual" && (
               <>
                 <StepBox>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -818,10 +828,6 @@ const EstadisticaTab = () => {
                       <Button type="button" variant="outline" onClick={copyJson}>
                         <Copy className="h-4 w-4" />
                         Copiar JSON
-                      </Button>
-                      <Button type="button" variant="outline" onClick={exportJson}>
-                        <Download className="h-4 w-4" />
-                        Descargar JSON
                       </Button>
                     </div>
                   </div>
@@ -874,8 +880,9 @@ const EstadisticaTab = () => {
                 Descargar Excel
               </Button>
             </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </Card>
     </div>
   );

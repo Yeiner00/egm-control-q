@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Clock3, FileText, Filter, Loader2, Sparkles, Waves } from "lucide-react";
+import { ChevronDown, Clock3, Copy, FileText, Filter, Loader2, Sparkles, Waves } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -35,6 +35,7 @@ import {
   loadPeopleNameOptions,
   searchPersonParticipations,
 } from "@/lib/reportPeople";
+import { createAiServiceError, createAiServiceErrorFromSupabaseFunctionError, runAiTask } from "@/lib/aiRateLimit";
 import { loadAvailableReportYears } from "@/lib/reportYears";
 import { downloadReportExcel } from "@/lib/reportExcelExport";
 import ProposalReportCard from "./ProposalReportCard";
@@ -75,8 +76,8 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
   const [rolesByReport, setRolesByReport] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState("");
-  const [activities, setActivities] = useState<{ activity: string; count: number }[]>([]);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [summaryAiMessage, setSummaryAiMessage] = useState("");
   const [expandedNovedades, setExpandedNovedades] = useState<Set<string>>(new Set());
   const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
   const [printingReportId, setPrintingReportId] = useState("");
@@ -146,7 +147,6 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
     }
     setLoading(true);
     setSummary("");
-    setActivities([]);
     setExpandedNovedades(new Set());
     setRolesByReport({});
     try {
@@ -202,6 +202,17 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
     }
   };
 
+  const copySummary = async () => {
+    if (!summary.trim()) return;
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      toast.success("Resumen copiado");
+    } catch {
+      toast.error("No se pudo copiar el resumen");
+    }
+  };
+
   const generateSummary = async () => {
     const novedades = reports.map((r) => r.novedades).filter(Boolean);
     if (novedades.length === 0) {
@@ -209,27 +220,40 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
       return;
     }
     setLoadingSummary(true);
+    setSummaryAiMessage("");
     try {
       const reportNumbers = reports.map((r) => r.no_reporte).join(", ");
       const embarcaciones = [...new Set(reports.map((r) => r.embarcacion).filter(Boolean))].join(", ");
       const totalMillasVal = reports.reduce((s, r) => s + (r.millas_nauticas || 0), 0);
-      const { data, error } = await supabase.functions.invoke("summarize-novedades", {
-        body: {
-          novedades,
-          persona,
-          tipo: "embarcacion",
-          reportNumbers,
-          embarcaciones,
-          totalMillas: totalMillasVal,
+      const data = await runAiTask(
+        async () => {
+          const result = await supabase.functions.invoke("summarize-novedades", {
+            body: {
+              novedades,
+              persona,
+              tipo: "embarcacion",
+              reportNumbers,
+              embarcaciones,
+              totalMillas: totalMillasVal,
+            },
+          });
+          if (result.error) throw await createAiServiceErrorFromSupabaseFunctionError(result.error, "Error al generar resumen");
+          if (result.data?.error) throw createAiServiceError(result.data);
+          return result.data;
         },
-      });
-      if (error) throw error;
+        {
+          label: "Resumen de novedades embarcacion",
+          onStatus: (status) => setSummaryAiMessage(status.message),
+        },
+      );
       setSummary(data?.summary || "No se pudo generar resumen");
-      setActivities(data?.activities || []);
-    } catch {
-      toast.error("Error al generar resumen");
+    } catch (error) {
+      toast.error("Error al generar resumen", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLoadingSummary(false);
+      setSummaryAiMessage("");
     }
   };
 
@@ -426,27 +450,27 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
                         <Sparkles className="h-4 w-4" />
                         Resumen IA
                       </h4>
-                      <Button size="sm" variant="outline" onClick={generateSummary} disabled={loadingSummary}>
-                        {loadingSummary ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-                        Generar
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {summary && (
+                          <Button size="sm" variant="outline" onClick={copySummary}>
+                            <Copy className="mr-1 h-3 w-3" />
+                            Copiar
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" onClick={generateSummary} disabled={loadingSummary}>
+                          {loadingSummary ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+                          Generar
+                        </Button>
+                      </div>
                     </div>
                     {summary ? (
                       <p className="whitespace-pre-line text-sm text-muted-foreground">{summary}</p>
+                    ) : loadingSummary && summaryAiMessage ? (
+                      <p className="text-sm text-muted-foreground">{summaryAiMessage}</p>
                     ) : (
                       <p className="text-sm text-muted-foreground">
-                        Genere el resumen para consolidar las novedades y actividades destacadas dentro de este panel.
+                        Genere el resumen para consolidar las novedades dentro de este panel.
                       </p>
-                    )}
-                    {activities.length > 0 && (
-                      <div className="space-y-1">
-                        <h5 className="text-xs font-semibold text-foreground">Actividades destacadas:</h5>
-                        {activities.map((a, i) => (
-                          <div key={i} className="text-sm">
-                            {a.activity}: <span className="font-bold">{a.count} {a.count === 1 ? "vez" : "veces"}</span>
-                          </div>
-                        ))}
-                      </div>
                     )}
                   </div>
                 </div>
