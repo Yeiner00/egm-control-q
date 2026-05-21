@@ -38,6 +38,36 @@ const cellNumber = (sheet: WorkSheet, ref: string) => {
 
 const afterColon = (value: string) => value.split(":").slice(1).join(":").trim();
 
+const normalizeText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const SCAN_COLUMNS = ["B", "C", "D", "E", "F", "G", "H", "I"];
+
+const findRowWhere = (
+  sheet: WorkSheet,
+  fromRow: number,
+  toRow: number,
+  predicate: (value: string) => boolean,
+) => {
+  for (let row = fromRow; row <= toRow; row += 1) {
+    for (const column of SCAN_COLUMNS) {
+      if (predicate(cellText(sheet, `${column}${row}`))) return row;
+    }
+  }
+  return null;
+};
+
+const findRowContaining = (sheet: WorkSheet, fromRow: number, toRow: number, terms: string[]) =>
+  findRowWhere(sheet, fromRow, toRow, (value) => {
+    const normalized = normalizeText(value);
+    return terms.every((term) => normalized.includes(term));
+  });
+
 const extractReportNumber = (...values: string[]) => {
   for (const value of values) {
     const match = value.match(/(?:No\.?|N°|#|No:)?\s*0*(\d{1,5})(?:-\d{4})?/i);
@@ -82,12 +112,41 @@ const excelHoursToNumber = (value: unknown) => {
   return null;
 };
 
+const stripPeopleLabel = (value: string) => {
+  const labels = ["acompanantes", "personas particulares a bordo", "personas particulares"];
+  const normalized = normalizeText(value);
+  if (labels.includes(normalized)) return "";
+
+  const colonIndex = value.indexOf(":");
+  if (colonIndex === -1) return value;
+
+  const label = normalizeText(value.slice(0, colonIndex));
+  return labels.some((knownLabel) => label.includes(knownLabel)) ? value.slice(colonIndex + 1).trim() : value;
+};
+
+const isPlaceholderPerson = (value: string) => {
+  const normalized = normalizeText(value);
+  return ["", "n a", "na", "no aplica", "ninguno", "ninguna", "sin datos"].includes(normalized);
+};
+
 const splitPeople = (value: string) =>
-  value
-    .replace(/^ACOMPAÑANTES?:/i, "")
-    .split(/,\s*/)
+  stripPeopleLabel(value)
+    .split(/[,;\n]+/)
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter((item) => !isPlaceholderPerson(item));
+
+const isTableLabel = (value: string) => {
+  const normalized = normalizeText(value);
+  if (!normalized) return false;
+  return (
+    ["nombre", "matricula", "no inspeccion", "no zona", "posicion", "pocision"].includes(normalized) ||
+    normalized.includes("embarcaciones inspeccionadas") ||
+    normalized.includes("saldo del combustible") ||
+    normalized.includes("combustible gastado") ||
+    normalized.includes("combustible trasegado") ||
+    normalized.includes("total de combustible")
+  );
+};
 
 const readSites = (
   sheet: WorkSheet,
@@ -100,11 +159,25 @@ const readSites = (
     const nombre_sitio = cellText(sheet, `${columns.nombre}${row}`);
     const zona = cellText(sheet, `${columns.zona}${row}`);
     const posicion = cellText(sheet, `${columns.posicion}${row}`);
-    if (nombre_sitio || zona || posicion) {
+    if ((nombre_sitio || zona || posicion) && ![nombre_sitio, zona, posicion].some(isTableLabel)) {
       sites.push({ nombre_sitio, zona, posicion });
     }
   }
   return sites;
+};
+
+const readInspectedBoats = (sheet: WorkSheet, fromRow: number, toRow: number) => {
+  const boats = [];
+  for (let row = fromRow; row <= toRow; row += 1) {
+    const nombre = cellText(sheet, `F${row}`);
+    const matricula = cellText(sheet, `G${row}`);
+    const no_inspeccion = cellText(sheet, `H${row}`);
+    const zona = cellText(sheet, `I${row}`);
+    if ((nombre || matricula || no_inspeccion || zona) && ![nombre, matricula, no_inspeccion, zona].some(isTableLabel)) {
+      boats.push({ nombre, matricula, no_inspeccion, zona, posicion: "" });
+    }
+  }
+  return boats;
 };
 
 const extractVehicleReport = (sheet: WorkSheet): ExtractedReportData => ({
@@ -136,55 +209,63 @@ const extractVehicleReport = (sheet: WorkSheet): ExtractedReportData => ({
   novedades: afterColon(cellText(sheet, "B17")),
 });
 
-const extractBoatReport = (sheet: WorkSheet): ExtractedReportData => ({
-  tipo: "embarcacion",
-  no_reporte: extractReportNumber(cellText(sheet, "B4"), cellText(sheet, "I4")),
-  bitacora: cellText(sheet, "G2"),
-  folios: cellText(sheet, "I2"),
-  fecha: parseSpanishDate(cellText(sheet, "C4")),
-  estacion: cellText(sheet, "C2"),
-  embarcacion: cellText(sheet, "E2"),
-  no_cierre_os: cellText(sheet, "I5").replace(/^N°\s*/i, ""),
-  hora_salida: excelTimeToText(cellValue(sheet, "C5")),
-  hora_regreso: excelTimeToText(cellValue(sheet, "E5")),
-  horas_motor_babor: excelHoursToNumber(cellValue(sheet, "C6")),
-  horas_motor_centro: excelHoursToNumber(cellValue(sheet, "E6")),
-  horas_motor_estribor: excelHoursToNumber(cellValue(sheet, "G6")),
-  destino: cellText(sheet, "C8"),
-  motivos: [cellText(sheet, "F8")].filter(Boolean),
-  capitan: cellText(sheet, "C37"),
-  capitan_cedula: cellText(sheet, "H37"),
-  encargado_mision: cellText(sheet, "C38"),
-  encargado_mision_cedula: cellText(sheet, "H38"),
-  operacional: cellText(sheet, "C36"),
-  operacional_cedula: cellText(sheet, "H36"),
-  tripulantes: [],
-  personas_particulares: splitPeople(cellText(sheet, "B11")),
-  sitios_visitados: readSites(sheet, 15, 23, { nombre: "F", zona: "G", posicion: "H" }),
-  embarcaciones_inspeccionadas: Array.from({ length: 4 }, (_, index) => {
-    const row = 26 + index;
-    return {
-      nombre: cellText(sheet, `F${row}`),
-      matricula: cellText(sheet, `G${row}`),
-      no_inspeccion: cellText(sheet, `H${row}`),
-      zona: cellText(sheet, `I${row}`),
-      posicion: "",
-    };
-  }).filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona),
-  saldo_anterior: cellNumber(sheet, "B31"),
-  combustible_trasegado_bodega: cellNumber(sheet, "C31"),
-  total_antes_viaje: cellNumber(sheet, "D31"),
-  combustible_trasegado_durante: cellNumber(sheet, "E31"),
-  combustible_gastado: cellNumber(sheet, "F31"),
-  saldo_despues: cellNumber(sheet, "H31"),
-  tipo_combustible: cellText(sheet, "I31"),
-  estacion_combustible: cellText(sheet, "B33"),
-  cedula_juridica_combustible: cellText(sheet, "C33"),
-  lugar_combustible: cellText(sheet, "D33"),
-  no_factura: cellText(sheet, "F33"),
-  millas_nauticas: cellNumber(sheet, "H33"),
-  novedades: afterColon(cellText(sheet, "B13")),
-});
+const extractBoatReport = (sheet: WorkSheet): ExtractedReportData => {
+  const inspectionSectionRow = findRowContaining(sheet, 13, 30, ["embarcaciones", "inspeccionadas"]) ?? 24;
+  const inspectionHeaderRow = findRowContaining(sheet, inspectionSectionRow, inspectionSectionRow + 3, ["matricula"]) ?? inspectionSectionRow + 1;
+  const fuelHeaderRow = findRowContaining(sheet, 24, 34, ["saldo", "combustible", "viaje", "anterior"]) ?? 30;
+  const fuelValuesRow = fuelHeaderRow + 1;
+  const fuelDetailsHeaderRow = findRowContaining(sheet, fuelValuesRow, fuelValuesRow + 5, ["millas", "nauticas"]) ?? 32;
+  const fuelDetailsRow = fuelDetailsHeaderRow + 1;
+  const signatureStartRow = fuelDetailsRow + 1;
+  const signatureEndRow = signatureStartRow + 8;
+  const operacionalRow = findRowContaining(sheet, signatureStartRow, signatureEndRow, ["operacional"]) ?? 36;
+  const capitanRow = findRowWhere(sheet, signatureStartRow, signatureEndRow, (value) => {
+    const normalized = normalizeText(value);
+    return normalized.includes("capitan") || (normalized.includes("operador") && normalized.includes("mando"));
+  }) ?? 37;
+  const encargadoRow = findRowContaining(sheet, signatureStartRow, signatureEndRow, ["encargado", "mision"]) ?? 38;
+
+  return {
+    tipo: "embarcacion",
+    no_reporte: extractReportNumber(cellText(sheet, "B4"), cellText(sheet, "I4")),
+    bitacora: cellText(sheet, "G2"),
+    folios: cellText(sheet, "I2"),
+    fecha: parseSpanishDate(cellText(sheet, "C4")),
+    estacion: cellText(sheet, "C2"),
+    embarcacion: cellText(sheet, "E2"),
+    no_cierre_os: cellText(sheet, "I5").replace(/^N°\s*/i, ""),
+    hora_salida: excelTimeToText(cellValue(sheet, "C5")),
+    hora_regreso: excelTimeToText(cellValue(sheet, "E5")),
+    horas_motor_babor: excelHoursToNumber(cellValue(sheet, "C6")),
+    horas_motor_centro: excelHoursToNumber(cellValue(sheet, "E6")),
+    horas_motor_estribor: excelHoursToNumber(cellValue(sheet, "G6")),
+    destino: cellText(sheet, "C8"),
+    motivos: [cellText(sheet, "F8")].filter(Boolean),
+    capitan: cellText(sheet, `C${capitanRow}`),
+    capitan_cedula: cellText(sheet, `H${capitanRow}`),
+    encargado_mision: cellText(sheet, `C${encargadoRow}`),
+    encargado_mision_cedula: cellText(sheet, `H${encargadoRow}`),
+    operacional: cellText(sheet, `C${operacionalRow}`),
+    operacional_cedula: cellText(sheet, `H${operacionalRow}`),
+    tripulantes: [],
+    personas_particulares: splitPeople(cellText(sheet, "B11")),
+    sitios_visitados: readSites(sheet, 15, inspectionSectionRow - 1, { nombre: "F", zona: "G", posicion: "H" }),
+    embarcaciones_inspeccionadas: readInspectedBoats(sheet, inspectionHeaderRow + 1, fuelHeaderRow - 1),
+    saldo_anterior: cellNumber(sheet, `B${fuelValuesRow}`),
+    combustible_trasegado_bodega: cellNumber(sheet, `C${fuelValuesRow}`),
+    total_antes_viaje: cellNumber(sheet, `D${fuelValuesRow}`),
+    combustible_trasegado_durante: cellNumber(sheet, `E${fuelValuesRow}`),
+    combustible_gastado: cellNumber(sheet, `F${fuelValuesRow}`),
+    saldo_despues: cellNumber(sheet, `H${fuelValuesRow}`),
+    tipo_combustible: cellText(sheet, `I${fuelValuesRow}`),
+    estacion_combustible: cellText(sheet, `B${fuelDetailsRow}`),
+    cedula_juridica_combustible: cellText(sheet, `C${fuelDetailsRow}`),
+    lugar_combustible: cellText(sheet, `D${fuelDetailsRow}`),
+    no_factura: cellText(sheet, `F${fuelDetailsRow}`),
+    millas_nauticas: cellNumber(sheet, `H${fuelDetailsRow}`),
+    novedades: afterColon(cellText(sheet, "B13")),
+  };
+};
 
 export const extractReportFromWorkbook = (workbook: WorkBook, XLSX: XlsxModule): ExtractedReportData | null => {
   for (const name of workbook.SheetNames) {
@@ -206,11 +287,12 @@ export const mergeExtractedReportData = (
 ) => {
   if (!aiData) return workbookData;
   if (!workbookData) return aiData;
+  const emptyArrayWorkbookOverrides = new Set(["acompanantes", "personas_particulares"]);
   return {
     ...aiData,
     ...Object.fromEntries(
-      Object.entries(workbookData).filter(([, value]) => {
-        if (Array.isArray(value)) return value.length > 0;
+      Object.entries(workbookData).filter(([key, value]) => {
+        if (Array.isArray(value)) return value.length > 0 || emptyArrayWorkbookOverrides.has(key);
         return value !== "" && value != null;
       }),
     ),
