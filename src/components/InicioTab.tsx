@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loadReportPeopleByIds } from "@/lib/reportPeople";
+import { getErrorMessage } from "@/lib/errorMessage";
+import { buildTopNauticalMiles, buildTopVehicleTrips, type PersonMetric } from "@/lib/homePerformance";
 
 type RecentZarpe = Pick<
   Tables<"zarpes_semana">,
@@ -27,11 +29,6 @@ type HolidayInfo = {
   date: Date;
   label: string;
   kind: "obligatorio" | "no_obligatorio";
-};
-
-type PersonMetric = {
-  name: string;
-  value: number;
 };
 
 const MONTH_LABELS = [
@@ -98,19 +95,6 @@ const formatTimestamp = (value: string) => {
     hour: "2-digit",
     minute: "2-digit",
   });
-};
-
-const normalizePersonKey = (value: string) =>
-  value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-
-const hasOperationalRole = (roles: string[]) => {
-  const normalizedRoles = roles.map((role) => normalizePersonKey(role));
-  return normalizedRoles.some((role) => role !== "particular" && role !== "persona particular");
 };
 
 const formatMetricValue = (value: number, unit: string) => {
@@ -269,24 +253,20 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
   useEffect(() => {
     let active = true;
 
-    const toTopFive = (items: Map<string, PersonMetric>) =>
-      Array.from(items.values())
-        .filter((item) => item.value > 0)
-        .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name, "es"))
-        .slice(0, 5);
-
     const loadPerformance = async () => {
       setPerformanceLoading(true);
 
       const [boatReportsResponse, vehicleReportsResponse] = await Promise.all([
-        supabase.from("reportes_embarcacion").select("id, millas_nauticas"),
+        supabase.from("reportes_embarcacion").select("id, millas_nauticas").gt("millas_nauticas", 0),
         supabase.from("reportes_vehiculo").select("id"),
       ]);
 
       if (!active) return;
 
       if (boatReportsResponse.error || vehicleReportsResponse.error) {
-        toast.error("No se pudieron cargar las estadisticas de inicio");
+        toast.error("No se pudieron cargar las estadisticas de inicio", {
+          description: getErrorMessage(boatReportsResponse.error || vehicleReportsResponse.error),
+        });
         setPerformanceLoading(false);
         return;
       }
@@ -302,44 +282,14 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
 
         if (!active) return;
 
-        const nauticalMilesByPerson = new Map<string, PersonMetric>();
-        boatReports.forEach((report) => {
-          const miles = Number(report.millas_nauticas ?? 0);
-          if (miles <= 0) return;
-
-          (boatPeopleByReport.get(report.id) ?? [])
-            .filter((person) => person.nombre?.trim() && hasOperationalRole(person.roles))
-            .forEach((person) => {
-              const key = normalizePersonKey(person.nombre);
-              const current = nauticalMilesByPerson.get(key) ?? { name: person.nombre, value: 0 };
-              current.value += miles;
-              nauticalMilesByPerson.set(key, current);
-            });
-        });
-
-        const vehicleTripsByPerson = new Map<string, PersonMetric>();
-        const countedTrips = new Set<string>();
-        vehicleReports.forEach((report) => {
-          (vehiclePeopleByReport.get(report.id) ?? [])
-            .filter((person) => person.nombre?.trim() && hasOperationalRole(person.roles))
-            .forEach((person) => {
-              const key = normalizePersonKey(person.nombre);
-              const tripKey = `${report.id}:${key}`;
-              if (countedTrips.has(tripKey)) return;
-
-              countedTrips.add(tripKey);
-              const current = vehicleTripsByPerson.get(key) ?? { name: person.nombre, value: 0 };
-              current.value += 1;
-              vehicleTripsByPerson.set(key, current);
-            });
-        });
-
-        setTopNauticalMiles(toTopFive(nauticalMilesByPerson));
-        setTopVehicleTrips(toTopFive(vehicleTripsByPerson));
+        setTopNauticalMiles(buildTopNauticalMiles(boatReports, boatPeopleByReport));
+        setTopVehicleTrips(buildTopVehicleTrips(vehicleReports, vehiclePeopleByReport));
         setPerformanceLoading(false);
-      } catch {
+      } catch (error) {
         if (active) {
-          toast.error("No se pudieron cruzar personas y reportes para Inicio");
+          toast.error("No se pudieron cruzar personas y reportes para Inicio", {
+            description: getErrorMessage(error),
+          });
           setPerformanceLoading(false);
         }
       }

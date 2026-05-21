@@ -34,9 +34,9 @@ const baseData: VehicleFormData = {
 
 const peopleOptions = [
   "Carlos Soto",
-  "Yeiner Castro Álvarez",
-  "Josué Acevedo Ríos",
-  "Luis Carlos González Jarquin",
+  "Yeiner Castro Alvarez",
+  "Josue Acevedo Rios",
+  "Luis Carlos Gonzalez Jarquin",
   "Ana Mora",
   "Bruno Vega",
   "Carla Ruiz",
@@ -256,16 +256,16 @@ describe("VehicleReportForm", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /carlos soto/i }));
-    fireEvent.click(getCommandItem("Yeiner Castro Álvarez"));
+    fireEvent.click(getCommandItem("Yeiner Castro Alvarez"));
 
     expect(screen.getByDisplayValue("603830474")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /oficial gomez/i }));
-    fireEvent.click(getCommandItem("Josué Acevedo Ríos"));
+    fireEvent.click(getCommandItem("Josue Acevedo Rios"));
 
     expect(screen.getByDisplayValue("603290196")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /yeiner castro álvarez/i }));
+    fireEvent.click(screen.getByRole("button", { name: /yeiner castro alvarez/i }));
     fireEvent.change(screen.getByPlaceholderText("Buscar o escribir..."), {
       target: { value: "Persona No Listada" },
     });

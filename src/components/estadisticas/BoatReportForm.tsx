@@ -8,13 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronDown, FilePlus2, Save, X, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, FilePlus2, X, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isEmptyReportValue } from "@/lib/missingData";
 import { findFuelProvider, FUEL_PROVIDER_OPTIONS } from "@/lib/fuelProviders";
 import { findSiteOption, type ReportSiteOption } from "@/lib/reportSites";
-import { findOfficerByName, OFFICER_OPTIONS } from "@/lib/officers";
+import { findOfficerByName, normalizeKnownPersonName, normalizeKnownPersonNames, OFFICER_OPTIONS } from "@/lib/officers";
+import { normalizeNameKey } from "@/lib/normalizeName";
 import ReportComboboxInput from "@/components/estadisticas/ReportComboboxInput";
+import ReportFormActionBar from "@/components/estadisticas/ReportFormActionBar";
 
 export interface BoatPersonData {
   nombre: string;
@@ -107,6 +109,8 @@ const BOAT_BITACORA_BY_UNIT: Record<string, string> = {
 };
 
 const normalizeSelectionValue = (value: string) => value.trim().toLocaleLowerCase();
+
+const normalizePersonSelectionValue = (value: string) => normalizeNameKey(normalizeKnownPersonName(value));
 
 const normalizeBoatKey = (value: string) => value.trim().toLocaleUpperCase();
 
@@ -410,16 +414,17 @@ const BoatReportForm = ({
     cedulaKey: "capitan_cedula" | "encargado_mision_cedula" | "operacional_cedula",
     value: string,
   ) => {
-    const officer = findOfficerByName(value);
-    const blockedValue = normalizeSelectionValue(value);
+    const cleanValue = normalizeKnownPersonName(value);
+    const officer = findOfficerByName(cleanValue);
+    const blockedValue = normalizePersonSelectionValue(cleanValue);
     onChange({
       ...data,
-      [nameKey]: value,
+      [nameKey]: cleanValue,
       ...(officer ? { [cedulaKey]: officer.identificacion || "" } : {}),
       ...(nameKey === "capitan" || nameKey === "encargado_mision"
         ? {
             tripulantes: data.tripulantes.filter(
-              (tripulante) => normalizeSelectionValue(tripulante.nombre) !== blockedValue,
+              (tripulante) => normalizePersonSelectionValue(tripulante.nombre) !== blockedValue,
             ),
           }
         : {}),
@@ -650,9 +655,10 @@ const BoatReportForm = ({
   };
 
   const updateTripulantes = (names: string[]) => {
-    const next = names.map((name) => {
+    const cleanNames = normalizeKnownPersonNames(names);
+    const next = cleanNames.map((name) => {
       const existing = data.tripulantes.find(
-        (tripulante) => normalizeSelectionValue(tripulante.nombre) === normalizeSelectionValue(name),
+        (tripulante) => normalizePersonSelectionValue(tripulante.nombre) === normalizePersonSelectionValue(name),
       );
       if (existing) return { ...existing, nombre: name };
       const officer = findOfficerByName(name);
@@ -666,7 +672,7 @@ const BoatReportForm = ({
 
   const updateTripulanteCedula = (name: string, cedula: string) => {
     update("tripulantes", data.tripulantes.map((tripulante) => (
-      normalizeSelectionValue(tripulante.nombre) === normalizeSelectionValue(name)
+      normalizePersonSelectionValue(tripulante.nombre) === normalizePersonSelectionValue(name)
         ? { ...tripulante, cedula }
         : tripulante
     )));
@@ -781,7 +787,7 @@ const BoatReportForm = ({
                 pending={showPendingState && hasPendingItems(data.tripulantes)}
                 renderSelected={(name, remove) => {
                   const tripulante = data.tripulantes.find(
-                    (person) => normalizeSelectionValue(person.nombre) === normalizeSelectionValue(name),
+                    (person) => normalizePersonSelectionValue(person.nombre) === normalizePersonSelectionValue(name),
                   );
                   return (
                     <div className="grid items-center gap-1 sm:grid-cols-[minmax(9rem,1fr)_12rem_2.25rem]">
@@ -971,14 +977,7 @@ const BoatReportForm = ({
       </section>
 
       {!hideActions && (
-        <div className="flex gap-2 pt-2">
-          <Button onClick={onSave} disabled={saving} size="sm">
-            <Save className="h-4 w-4 mr-1" />{saving ? "Guardando..." : saveLabel}
-          </Button>
-          <Button variant="outline" onClick={onCancel} size="sm">
-            <X className="h-4 w-4 mr-1" />Cancelar
-          </Button>
-        </div>
+        <ReportFormActionBar onSave={onSave} onCancel={onCancel} saving={saving} saveLabel={saveLabel} />
       )}
     </Card>
   );

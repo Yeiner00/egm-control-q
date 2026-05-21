@@ -10,6 +10,7 @@ import { downloadReportExcel } from "@/lib/reportExcelExport";
 import { loadSiteOptions, type ReportSiteOption } from "@/lib/reportSites";
 import { isEmptyReportValue } from "@/lib/missingData";
 import { findOfficerByName, mergeOfficerOptions } from "@/lib/officers";
+import { getErrorMessage } from "@/lib/errorMessage";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -268,10 +269,12 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
 
       let unitOptions: string[] = [];
       if (optionType === "vehiculo") {
-        const { data } = await supabase.from("reportes_vehiculo").select("vehiculo");
+        const { data, error } = await supabase.from("reportes_vehiculo").select("vehiculo");
+        if (error) throw error;
         unitOptions = [...new Set((data || []).map((row) => row.vehiculo?.trim()).filter(Boolean) as string[])].sort();
       } else {
-        const { data } = await supabase.from("reportes_embarcacion").select("embarcacion");
+        const { data, error } = await supabase.from("reportes_embarcacion").select("embarcacion");
+        if (error) throw error;
         unitOptions = [...new Set((data || []).map((row) => row.embarcacion?.trim()).filter(Boolean) as string[])].sort();
       }
 
@@ -288,12 +291,15 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
       setSiteOptions(loadedSiteOptions);
     };
 
-    loadManualOptions().catch(() => {
+    loadManualOptions().catch((error) => {
       if (!active) return;
       setManualUnitOptions([]);
       setManualPeopleOptions(mergeOfficerOptions([]));
       setMotiveOptions([]);
       setSiteOptions([]);
+      toast.error("No se pudieron cargar las opciones del formulario", {
+        description: getErrorMessage(error),
+      });
     });
 
     return () => {

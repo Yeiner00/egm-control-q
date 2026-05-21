@@ -43,6 +43,7 @@ import { calcTotalHours } from "@/lib/report-utils";
 import { normalizeReportNumber, normalizeReportUnit } from "@/lib/reportNumber";
 import { buildLegacyReportMotiveRows, buildReportMotiveRows, loadMotiveOptions } from "@/lib/motives";
 import { loadAvailableReportYears } from "@/lib/reportYears";
+import { getErrorMessage } from "@/lib/errorMessage";
 import ResultPanelState from "@/components/ResultPanelState";
 import {
   countUniqueNormalizedNames,
@@ -188,8 +189,10 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         if (availableYears.length > 0 && !availableYears.includes(year)) {
           setYear(availableYears[0]);
         }
-      } catch {
-        toast.error("No se pudieron cargar los años disponibles");
+      } catch (error) {
+        toast.error("No se pudieron cargar los años disponibles", {
+          description: getErrorMessage(error),
+        });
       }
     };
     loadYears();
@@ -197,20 +200,30 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
 
   useEffect(() => {
     const loadUnits = async () => {
-      if (tipo === "vehiculo") {
-        const { data } = await supabase
-          .from("reportes_vehiculo")
-          .select("vehiculo")
-          .eq("anio", parseInt(year));
-        setUnidades([...new Set((data || []).map((d) => d.vehiculo).filter(Boolean) as string[])].sort());
-      } else {
-        const { data } = await supabase
-          .from("reportes_embarcacion")
-          .select("embarcacion")
-          .eq("anio", parseInt(year));
-        setUnidades([...new Set((data || []).map((d) => d.embarcacion).filter(Boolean) as string[])].sort());
+      try {
+        if (tipo === "vehiculo") {
+          const { data, error } = await supabase
+            .from("reportes_vehiculo")
+            .select("vehiculo")
+            .eq("anio", parseInt(year));
+          if (error) throw error;
+          setUnidades([...new Set((data || []).map((d) => d.vehiculo).filter(Boolean) as string[])].sort());
+        } else {
+          const { data, error } = await supabase
+            .from("reportes_embarcacion")
+            .select("embarcacion")
+            .eq("anio", parseInt(year));
+          if (error) throw error;
+          setUnidades([...new Set((data || []).map((d) => d.embarcacion).filter(Boolean) as string[])].sort());
+        }
+        setUnidad("");
+      } catch (error) {
+        setUnidades([]);
+        setUnidad("");
+        toast.error("No se pudieron cargar las unidades", {
+          description: getErrorMessage(error),
+        });
       }
-      setUnidad("");
     };
     loadUnits();
   }, [tipo, year]);
@@ -226,10 +239,13 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         setPeopleOptions(loadedPeopleOptions);
         setMotiveOptions(loadedMotiveOptions);
         setSiteOptions(loadedSiteOptions);
-      } catch {
+      } catch (error) {
         setPeopleOptions([]);
         setMotiveOptions([]);
         setSiteOptions(DEFAULT_REPORT_SITE_OPTIONS);
+        toast.error("No se pudieron cargar las opciones del formulario", {
+          description: getErrorMessage(error),
+        });
       }
     };
     loadFormOptions();
@@ -239,50 +255,58 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     if (!initialSelection?.reportId) return;
 
     const loadInitialSelection = async () => {
-      const targetTipo = initialSelection.tipo;
-      setTipo(targetTipo);
-      setSelectedMonths([]);
-      setUnidad("");
-      setPinnedReportOption(null);
-      setSelectedReportIds([]);
-      setSelectedId("");
-      setPreview(null);
-      setEditing(false);
+      try {
+        const targetTipo = initialSelection.tipo;
+        setTipo(targetTipo);
+        setSelectedMonths([]);
+        setUnidad("");
+        setPinnedReportOption(null);
+        setSelectedReportIds([]);
+        setSelectedId("");
+        setPreview(null);
+        setEditing(false);
 
-      if (targetTipo === "vehiculo") {
-        const { data } = await supabase
-          .from("reportes_vehiculo")
-          .select("id, no_reporte, fecha, vehiculo")
+        if (targetTipo === "vehiculo") {
+          const { data, error } = await supabase
+            .from("reportes_vehiculo")
+            .select("id, no_reporte, fecha, vehiculo")
+            .eq("id", initialSelection.reportId)
+            .single();
+          if (error) throw error;
+          if (!data) return;
+          if (data.fecha) setYear(String(new Date(`${data.fecha}T00:00:00`).getFullYear()));
+          setPinnedReportOption({
+            id: data.id,
+            no_reporte: data.no_reporte,
+            fecha: data.fecha,
+            unidad: data.vehiculo,
+          });
+          setSelectedReportIds([data.id]);
+          setSelectedId(data.id);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("reportes_embarcacion")
+          .select("id, no_reporte, fecha, embarcacion")
           .eq("id", initialSelection.reportId)
           .single();
+        if (error) throw error;
         if (!data) return;
         if (data.fecha) setYear(String(new Date(`${data.fecha}T00:00:00`).getFullYear()));
         setPinnedReportOption({
           id: data.id,
           no_reporte: data.no_reporte,
           fecha: data.fecha,
-          unidad: data.vehiculo,
+          unidad: data.embarcacion,
         });
         setSelectedReportIds([data.id]);
         setSelectedId(data.id);
-        return;
+      } catch (error) {
+        toast.error("No se pudo abrir el reporte seleccionado", {
+          description: getErrorMessage(error),
+        });
       }
-
-      const { data } = await supabase
-        .from("reportes_embarcacion")
-        .select("id, no_reporte, fecha, embarcacion")
-        .eq("id", initialSelection.reportId)
-        .single();
-      if (!data) return;
-      if (data.fecha) setYear(String(new Date(`${data.fecha}T00:00:00`).getFullYear()));
-      setPinnedReportOption({
-        id: data.id,
-        no_reporte: data.no_reporte,
-        fecha: data.fecha,
-        unidad: data.embarcacion,
-      });
-      setSelectedReportIds([data.id]);
-      setSelectedId(data.id);
     };
 
     loadInitialSelection();
@@ -290,44 +314,54 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
 
   useEffect(() => {
     const load = async () => {
-      let results: ReportOption[] = [];
+      try {
+        let results: ReportOption[] = [];
 
-      if (tipo === "vehiculo") {
-        let q = supabase
-          .from("reportes_vehiculo")
-          .select("id, no_reporte, fecha, vehiculo")
-          .eq("anio", parseInt(year))
-          .order("no_reporte");
-        if (unidad && unidad !== "all") q = q.eq("vehiculo", unidad);
-        const { data } = await q;
-        results = (data || [])
-          .filter((d) => {
-            if (selectedMonths.length === 0 || !d.fecha) return true;
-            const month = new Date(d.fecha).getMonth() + 1;
-            return selectedMonths.includes(String(month));
-          })
-          .map((d) => ({ id: d.id, no_reporte: d.no_reporte, fecha: d.fecha, unidad: d.vehiculo }));
-      } else {
-        let q = supabase
-          .from("reportes_embarcacion")
-          .select("id, no_reporte, fecha, embarcacion")
-          .eq("anio", parseInt(year))
-          .order("no_reporte");
-        if (unidad && unidad !== "all") q = q.eq("embarcacion", unidad);
-        const { data } = await q;
-        results = (data || [])
-          .filter((d) => {
-            if (selectedMonths.length === 0 || !d.fecha) return true;
-            const month = new Date(d.fecha).getMonth() + 1;
-            return selectedMonths.includes(String(month));
-          })
-          .map((d) => ({ id: d.id, no_reporte: d.no_reporte, fecha: d.fecha, unidad: d.embarcacion }));
+        if (tipo === "vehiculo") {
+          let q = supabase
+            .from("reportes_vehiculo")
+            .select("id, no_reporte, fecha, vehiculo")
+            .eq("anio", parseInt(year))
+            .order("no_reporte");
+          if (unidad && unidad !== "all") q = q.eq("vehiculo", unidad);
+          const { data, error } = await q;
+          if (error) throw error;
+          results = (data || [])
+            .filter((d) => {
+              if (selectedMonths.length === 0 || !d.fecha) return true;
+              const month = new Date(d.fecha).getMonth() + 1;
+              return selectedMonths.includes(String(month));
+            })
+            .map((d) => ({ id: d.id, no_reporte: d.no_reporte, fecha: d.fecha, unidad: d.vehiculo }));
+        } else {
+          let q = supabase
+            .from("reportes_embarcacion")
+            .select("id, no_reporte, fecha, embarcacion")
+            .eq("anio", parseInt(year))
+            .order("no_reporte");
+          if (unidad && unidad !== "all") q = q.eq("embarcacion", unidad);
+          const { data, error } = await q;
+          if (error) throw error;
+          results = (data || [])
+            .filter((d) => {
+              if (selectedMonths.length === 0 || !d.fecha) return true;
+              const month = new Date(d.fecha).getMonth() + 1;
+              return selectedMonths.includes(String(month));
+            })
+            .map((d) => ({ id: d.id, no_reporte: d.no_reporte, fecha: d.fecha, unidad: d.embarcacion }));
+        }
+
+        setReportNumbers(results);
+        const availableIds = new Set(results.map((report) => report.id));
+        const pinnedId = pinnedReportOption?.id ?? initialSelection?.reportId;
+        setSelectedReportIds((prev) => prev.filter((id) => availableIds.has(id) || id === pinnedId));
+      } catch (error) {
+        setReportNumbers([]);
+        setSelectedReportIds([]);
+        toast.error("No se pudieron cargar los reportes", {
+          description: getErrorMessage(error),
+        });
       }
-
-      setReportNumbers(results);
-      const availableIds = new Set(results.map((report) => report.id));
-      const pinnedId = pinnedReportOption?.id ?? initialSelection?.reportId;
-      setSelectedReportIds((prev) => prev.filter((id) => availableIds.has(id) || id === pinnedId));
     };
     load();
   }, [tipo, year, selectedMonths, unidad, pinnedReportOption?.id, initialSelection?.reportId]);
@@ -348,39 +382,54 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     }
 
     const load = async () => {
-      const { data: report } = await supabase.from(table).select("*").eq("id", selectedId).single();
-      const { data: mots } = await supabase
-        .from("reporte_motivos")
-        .select("motivo")
-        .eq("reporte_id", selectedId)
-        .eq("tipo_reporte", tipo);
-      const { data: sits } = await supabase
-        .from("reporte_sitios")
-        .select("nombre_sitio, zona, posicion")
-        .eq("reporte_id", selectedId);
-      const { data: inspectedBoats } = tipo === "embarcacion"
-        ? await supabase
-          .from("reporte_embarcaciones_inspeccionadas")
-          .select("nombre, matricula, no_inspeccion, zona, posicion")
+      try {
+        const { data: report, error: reportError } = await supabase.from(table).select("*").eq("id", selectedId).single();
+        if (reportError) throw reportError;
+        const { data: mots, error: motivesError } = await supabase
+          .from("reporte_motivos")
+          .select("motivo")
           .eq("reporte_id", selectedId)
-        : { data: [] };
-      const peopleMap = await loadReportPeopleByIds([selectedId], tipo);
+          .eq("tipo_reporte", tipo);
+        if (motivesError) throw motivesError;
+        const { data: sits, error: sitesError } = await supabase
+          .from("reporte_sitios")
+          .select("nombre_sitio, zona, posicion")
+          .eq("reporte_id", selectedId);
+        if (sitesError) throw sitesError;
+        const { data: inspectedBoats, error: inspectedBoatsError } = tipo === "embarcacion"
+          ? await supabase
+            .from("reporte_embarcaciones_inspeccionadas")
+            .select("nombre, matricula, no_inspeccion, zona, posicion")
+            .eq("reporte_id", selectedId)
+          : { data: [], error: null };
+        if (inspectedBoatsError) throw inspectedBoatsError;
+        const peopleMap = await loadReportPeopleByIds([selectedId], tipo);
 
-      setPreview(report);
-      setPersonas(peopleMap.get(selectedId) || []);
-      setMotivos((mots || []).map((m) => m.motivo));
-      setSitios((sits || []).map((site) => ({
-        nombre_sitio: site.nombre_sitio,
-        zona: site.zona || "",
-        posicion: site.posicion || "",
-      })));
-      setEmbarcacionesInspeccionadas((inspectedBoats || []).map((item) => ({
-        nombre: item.nombre || "",
-        matricula: item.matricula || "",
-        no_inspeccion: item.no_inspeccion || "",
-        zona: item.zona || "",
-        posicion: item.posicion || "",
-      })));
+        setPreview(report);
+        setPersonas(peopleMap.get(selectedId) || []);
+        setMotivos((mots || []).map((m) => m.motivo));
+        setSitios((sits || []).map((site) => ({
+          nombre_sitio: site.nombre_sitio,
+          zona: site.zona || "",
+          posicion: site.posicion || "",
+        })));
+        setEmbarcacionesInspeccionadas((inspectedBoats || []).map((item) => ({
+          nombre: item.nombre || "",
+          matricula: item.matricula || "",
+          no_inspeccion: item.no_inspeccion || "",
+          zona: item.zona || "",
+          posicion: item.posicion || "",
+        })));
+      } catch (error) {
+        setPreview(null);
+        setPersonas([]);
+        setMotivos([]);
+        setSitios([]);
+        setEmbarcacionesInspeccionadas([]);
+        toast.error("No se pudo cargar el reporte seleccionado", {
+          description: getErrorMessage(error),
+        });
+      }
     };
 
     load();

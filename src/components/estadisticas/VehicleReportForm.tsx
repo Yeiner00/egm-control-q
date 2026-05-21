@@ -8,13 +8,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronDown, FilePlus2, Save, X, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, FilePlus2, X, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hasEmptyReportValue, isEmptyReportValue } from "@/lib/missingData";
 import { findFuelProvider, FUEL_PROVIDER_OPTIONS } from "@/lib/fuelProviders";
 import { findSiteOption, type ReportSiteOption } from "@/lib/reportSites";
-import { findOfficerByName } from "@/lib/officers";
+import { findOfficerByName, normalizeKnownPersonName, normalizeKnownPersonNames } from "@/lib/officers";
+import { normalizeNameKey } from "@/lib/normalizeName";
 import ReportComboboxInput from "@/components/estadisticas/ReportComboboxInput";
+import ReportFormActionBar from "@/components/estadisticas/ReportFormActionBar";
 
 export interface VehicleSiteData {
   nombre_sitio: string;
@@ -81,6 +83,8 @@ const VEHICLE_BITACORA_BY_UNIT: Record<string, string> = {
 };
 
 const normalizeSelectionValue = (value: string) => value.trim().toLocaleLowerCase();
+
+const normalizePersonSelectionValue = (value: string) => normalizeNameKey(normalizeKnownPersonName(value));
 
 const normalizeVehicleKey = (value: string) => value.trim().toLocaleUpperCase();
 
@@ -296,13 +300,14 @@ const VehicleReportForm = ({
   };
 
   const updateChofer = (value: string) => {
-    const normalizedValue = normalizeSelectionValue(value);
-    const officer = findOfficerByName(value);
+    const cleanValue = normalizeKnownPersonName(value);
+    const normalizedValue = normalizePersonSelectionValue(cleanValue);
+    const officer = findOfficerByName(cleanValue);
     onChange({
       ...data,
-      chofer: value,
+      chofer: cleanValue,
       ...(officer ? { chofer_cedula: officer.identificacion || "" } : {}),
-      acompanantes: data.acompanantes.filter((acompanante) => normalizeSelectionValue(acompanante) !== normalizedValue),
+      acompanantes: data.acompanantes.filter((acompanante) => normalizePersonSelectionValue(acompanante) !== normalizedValue),
     });
   };
 
@@ -315,10 +320,11 @@ const VehicleReportForm = ({
   };
 
   const updateOficial = (value: string) => {
-    const officer = findOfficerByName(value);
+    const cleanValue = normalizeKnownPersonName(value);
+    const officer = findOfficerByName(cleanValue);
     onChange({
       ...data,
-      oficial_a_cargo: value,
+      oficial_a_cargo: cleanValue,
       ...(officer ? { oficial_a_cargo_cedula: officer.identificacion || "" } : {}),
     });
   };
@@ -594,7 +600,7 @@ const VehicleReportForm = ({
               <MultiValueSelector
                 label="Acompanantes"
                 value={data.acompanantes}
-                onChange={(nextValue) => update("acompanantes", nextValue)}
+                onChange={(nextValue) => update("acompanantes", normalizeKnownPersonNames(nextValue))}
                 options={peopleOptions}
                 maxSelected={MAX_ACOMPANANTES}
                 singularLabel="acompanante"
@@ -745,14 +751,7 @@ const VehicleReportForm = ({
       </section>
 
       {!hideActions && (
-        <div className="flex gap-2 pt-2">
-          <Button onClick={onSave} disabled={saving} size="sm">
-            <Save className="h-4 w-4 mr-1" />{saving ? "Guardando..." : saveLabel}
-          </Button>
-          <Button variant="outline" onClick={onCancel} size="sm">
-            <X className="h-4 w-4 mr-1" />Cancelar
-          </Button>
-        </div>
+        <ReportFormActionBar onSave={onSave} onCancel={onCancel} saving={saving} saveLabel={saveLabel} />
       )}
     </Card>
   );

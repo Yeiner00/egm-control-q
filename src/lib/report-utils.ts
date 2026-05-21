@@ -1,6 +1,7 @@
 import type { BoatFormData } from "@/components/estadisticas/BoatReportForm";
 import type { VehicleFormData } from "@/components/estadisticas/VehicleReportForm";
 import { normalizeMotives } from "@/lib/motives";
+import { normalizeKnownPersonName, normalizeKnownPersonNames } from "@/lib/officers";
 import { normalizeReportNumber } from "@/lib/reportNumber";
 
 export type ExtractedReportType = "vehiculo" | "embarcacion";
@@ -29,18 +30,29 @@ const mapExtractedMotives = (data: ExtractedReportData): string[] => {
   return normalizeMotives(values.map(String)).map((motivo) => motivo.motivo);
 };
 
-const mapPersonWithCedula = (value: unknown) => {
+const mapPersonNameList = (value: unknown) => {
+  const values = Array.isArray(value)
+    ? value.map(String)
+    : typeof value === "string"
+      ? [value]
+      : [];
+
+  return normalizeKnownPersonNames(values);
+};
+
+const mapPersonsWithCedula = (value: unknown) => {
   if (typeof value === "string") {
-    return { nombre: value, cedula: "" };
+    return normalizeKnownPersonNames([value]).map((nombre) => ({ nombre, cedula: "" }));
   }
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
-    return {
-      nombre: (record.nombre as string) || "",
-      cedula: (record.cedula as string) || "",
-    };
+    const names = normalizeKnownPersonNames([(record.nombre as string) || ""]);
+    return names.map((nombre) => ({
+      nombre,
+      cedula: names.length === 1 ? (record.cedula as string) || "" : "",
+    }));
   }
-  return { nombre: "", cedula: "" };
+  return [];
 };
 
 const mapSiteWithPosition = (value: unknown) => {
@@ -65,10 +77,10 @@ export const mapToVehicleFormData = (data: ExtractedReportData): VehicleFormData
   vehiculo: (data.vehiculo as string) || "",
   destino: (data.destino as string) || "",
   motivos: mapExtractedMotives(data),
-  chofer: (data.chofer as string) || "",
+  chofer: normalizeKnownPersonName((data.chofer as string) || ""),
   chofer_cedula: (data.chofer_cedula as string) || "",
-  acompanantes: (data.acompanantes as string[]) || [],
-  oficial_a_cargo: (data.oficial_a_cargo as string) || "",
+  acompanantes: mapPersonNameList(data.acompanantes),
+  oficial_a_cargo: normalizeKnownPersonName((data.oficial_a_cargo as string) || ""),
   oficial_a_cargo_cedula: (data.oficial_a_cargo_cedula as string) || "",
   sitios_visitados: Array.isArray(data.sitios_visitados) ? data.sitios_visitados.map(mapSiteWithPosition) : [],
   estacion_combustible: (data.estacion_combustible as string) || "",
@@ -98,14 +110,14 @@ export const mapToBoatFormData = (data: ExtractedReportData): BoatFormData => ({
   horas_motor_estribor: (data.horas_motor_estribor as number) ?? null,
   destino: (data.destino as string) || "",
   motivos: mapExtractedMotives(data),
-  capitan: (data.capitan as string) || "",
+  capitan: normalizeKnownPersonName((data.capitan as string) || ""),
   capitan_cedula: (data.capitan_cedula as string) || "",
-  encargado_mision: (data.encargado_mision as string) || "",
+  encargado_mision: normalizeKnownPersonName((data.encargado_mision as string) || ""),
   encargado_mision_cedula: (data.encargado_mision_cedula as string) || "",
-  operacional: (data.operacional as string) || "",
+  operacional: normalizeKnownPersonName((data.operacional as string) || ""),
   operacional_cedula: (data.operacional_cedula as string) || "",
-  tripulantes: Array.isArray(data.tripulantes) ? data.tripulantes.map(mapPersonWithCedula) : [],
-  personas_particulares: (data.personas_particulares as string[]) || [],
+  tripulantes: Array.isArray(data.tripulantes) ? data.tripulantes.flatMap(mapPersonsWithCedula) : [],
+  personas_particulares: mapPersonNameList(data.personas_particulares),
   sitios_visitados: Array.isArray(data.sitios_visitados) ? data.sitios_visitados.map(mapSiteWithPosition) : [],
   embarcaciones_inspeccionadas: Array.isArray(data.embarcaciones_inspeccionadas)
     ? data.embarcaciones_inspeccionadas.map((value) => {

@@ -36,6 +36,8 @@ import {
   searchPersonParticipations,
 } from "@/lib/reportPeople";
 import { countVehicleMotiveReports } from "@/lib/motives";
+import { getErrorMessage } from "@/lib/errorMessage";
+import { buildReportMonthRanges, getReportMonthBounds, isDateInReportMonthRanges } from "@/lib/reportMonthFilters";
 import { createAiServiceError, createAiServiceErrorFromSupabaseFunctionError, runAiTask } from "@/lib/aiRateLimit";
 import { loadAvailableReportYears } from "@/lib/reportYears";
 import { downloadReportExcel } from "@/lib/reportExcelExport";
@@ -87,8 +89,15 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
 
   useEffect(() => {
     const loadNames = async () => {
-      const names = await loadPeopleNameOptions(NAME_FILTER_EXCLUDED_ROLES, "vehiculo");
-      setPersonNames(names);
+      try {
+        const names = await loadPeopleNameOptions(NAME_FILTER_EXCLUDED_ROLES, "vehiculo");
+        setPersonNames(names);
+      } catch (error) {
+        setPersonNames([]);
+        toast.error("No se pudieron cargar las personas", {
+          description: getErrorMessage(error),
+        });
+      }
     };
     loadNames();
   }, []);
@@ -98,15 +107,17 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
       try {
         const availableYears = await loadAvailableReportYears("reportes_vehiculo");
         setYears(availableYears);
-        if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
-          setSelectedYear(availableYears[0]);
-        }
-      } catch {
-        toast.error("No se pudieron cargar los años disponibles");
+        setSelectedYear((current) =>
+          availableYears.length > 0 && !availableYears.includes(current) ? availableYears[0] : current,
+        );
+      } catch (error) {
+        toast.error("No se pudieron cargar los años disponibles", {
+          description: getErrorMessage(error),
+        });
       }
     };
     loadYears();
-  }, [selectedYear]);
+  }, []);
 
   const buildRoleDisplay = (roles: string[]) => {
     const specials = Array.from(
@@ -154,11 +165,45 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
     setExpandedNovedades(new Set());
     setRolesByReport({});
     try {
-      const year = parseInt(selectedYear);
-      const personRecords = await searchPersonParticipations(persona.trim(), "vehiculo");
+      const year = parseInt(selectedYear, 10);
+      const monthRanges = buildReportMonthRanges(year, selectedMonths);
+      const monthBounds = getReportMonthBounds(monthRanges);
+      if (!monthBounds) {
+        toast.error("Selecciona uno o mas meses y una persona");
+        return;
+      }
+
+      const { data: vehicleReports, error: vehicleReportsError } = await supabase
+        .from("reportes_vehiculo")
+        .select("*")
+        .eq("anio", year)
+        .gte("fecha", monthBounds.startDate)
+        .lt("fecha", monthBounds.endDateExclusive)
+        .order("fecha", { ascending: true });
+      if (vehicleReportsError) throw vehicleReportsError;
+
+      const candidateReports = (vehicleReports || []).filter((report) =>
+        isDateInReportMonthRanges(report.fecha, monthRanges),
+      );
+      if (candidateReports.length === 0) {
+        setReports([]);
+        setMotivos({});
+        setMotivosForSummary([]);
+        setRolesByReport({});
+        toast.info("No se encontraron reportes para ese periodo");
+        setLoading(false);
+        return;
+      }
+
+      const personRecords = await searchPersonParticipations(
+        persona.trim(),
+        "vehiculo",
+        candidateReports.map((report) => report.id),
+      );
 
       if (!personRecords || personRecords.length === 0) {
         setReports([]);
+        setMotivos({});
         setMotivosForSummary([]);
         setRolesByReport({});
         toast.info("No se encontraron reportes para esa persona");
@@ -166,30 +211,23 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
         return;
       }
 
-      const reportIds = personRecords.map((p) => p.reporte_id);
+      const reportIds = new Set(personRecords.map((p) => p.reporte_id));
       const reportRolesMap: Record<string, string[]> = {};
       personRecords.forEach((p) => {
         reportRolesMap[p.reporte_id] = p.roles;
       });
 
-      const { data: vehicleReports } = await supabase
-        .from("reportes_vehiculo")
-        .select("*")
-        .in("id", reportIds)
-        .eq("anio", year);
-
-      const filtered = (vehicleReports || []).filter((r) => {
-        if (!r.fecha) return false;
-        const month = new Date(r.fecha).getMonth() + 1;
-        return selectedMonths.includes(String(month));
-      });
+      const filtered = candidateReports.filter((report) => reportIds.has(report.id));
 
       const filteredIds = filtered.map((r) => r.id);
-      const { data: motivosData } = await supabase
-        .from("reporte_motivos")
-        .select("reporte_id, motivo, motivo_key")
-        .eq("tipo_reporte", "vehiculo")
-        .in("reporte_id", filteredIds);
+      const { data: motivosData, error: motivosError } = filteredIds.length > 0
+        ? await supabase
+          .from("reporte_motivos")
+          .select("reporte_id, motivo, motivo_key")
+          .eq("tipo_reporte", "vehiculo")
+          .in("reporte_id", filteredIds)
+        : { data: [], error: null };
+      if (motivosError) throw motivosError;
 
       const motivoMap: Record<string, string[]> = {};
       (motivosData || []).forEach((m) => {
@@ -201,8 +239,14 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
       setMotivos(motivoMap);
       setMotivosForSummary((motivosData || []) as VehicleMotiveRecord[]);
       setRolesByReport(reportRolesMap);
-    } catch {
-      toast.error("Error al buscar reportes");
+    } catch (error) {
+      setReports([]);
+      setMotivos({});
+      setMotivosForSummary([]);
+      setRolesByReport({});
+      toast.error("Error al buscar reportes", {
+        description: getErrorMessage(error),
+      });
     } finally {
       setLoading(false);
     }

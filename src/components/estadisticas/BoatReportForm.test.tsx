@@ -45,10 +45,10 @@ const baseData: BoatFormData = {
 };
 
 const peopleOptions = [
-  "Yeiner Castro Álvarez",
-  "Josué Acevedo Ríos",
-  "César Álvarez Martínez",
-  "Roberth Sánchez Parra",
+  "Yeiner Castro Alvarez",
+  "Josue Acevedo Rios",
+  "Cesar Alvarez Martinez",
+  "Roberth Sanchez Parra",
   "Ana Mora",
   "Bruno Vega",
   "Carla Ruiz",
@@ -291,8 +291,8 @@ describe("BoatReportForm", () => {
     renderBoatForm({
       data: {
         ...baseData,
-        capitan: "Yeiner Castro Álvarez",
-        encargado_mision: "Josué Acevedo Ríos",
+        capitan: "Yeiner Castro Alvarez",
+        encargado_mision: "Josue Acevedo Rios",
         tripulantes: [],
       },
     });
@@ -300,13 +300,13 @@ describe("BoatReportForm", () => {
     expect(screen.getByText("Sin tripulantes seleccionados")).toBeInTheDocument();
 
     openTripulantesSelector();
-    expect(getCommandItem("Yeiner Castro Álvarez")).toHaveAttribute("data-disabled", "true");
-    expect(getCommandItem("Josué Acevedo Ríos")).toHaveAttribute("data-disabled", "true");
+    expect(getCommandItem("Yeiner Castro Alvarez")).toHaveAttribute("data-disabled", "true");
+    expect(getCommandItem("Josue Acevedo Rios")).toHaveAttribute("data-disabled", "true");
 
     [
-      "Roberth Sánchez Parra",
-      "César Álvarez Martínez",
-      "Olman Alfaro Quirós",
+      "Roberth Sanchez Parra",
+      "Cesar Alvarez Martinez",
+      "Olman Alfaro Quiros",
       "Sergio Alpizar Carrillo",
       "Pablo Barrantes Palma",
       "Minor Cambronero Campos",
@@ -316,7 +316,7 @@ describe("BoatReportForm", () => {
 
     expect(screen.getByRole("button", { name: /6 tripulantes seleccionados/i })).toBeInTheDocument();
     expect(screen.getByText("Maximo 6 tripulantes seleccionados.")).toBeInTheDocument();
-    expect(getCommandItem("Jhonny Araya Chacón")).toHaveAttribute("data-disabled", "true");
+    expect(getCommandItem("Jhonny Araya Chacon")).toHaveAttribute("data-disabled", "true");
 
     const tripulanteCedula = screen.getByDisplayValue("503950054");
     fireEvent.change(tripulanteCedula, { target: { value: "503950055" } });
@@ -332,15 +332,15 @@ describe("BoatReportForm", () => {
     expect(tripulantes.compareDocumentPosition(operacional) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /capitan actual/i }));
-    fireEvent.click(getCommandItem("Yeiner Castro Álvarez"));
+    fireEvent.click(getCommandItem("Yeiner Castro Alvarez"));
     expect(screen.getByDisplayValue("603830474")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /encargado actual/i }));
-    fireEvent.click(getCommandItem("Josué Acevedo Ríos"));
+    fireEvent.click(getCommandItem("Josue Acevedo Rios"));
     expect(screen.getByDisplayValue("603290196")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /operacional actual/i }));
-    fireEvent.click(getCommandItem("César Álvarez Martínez"));
+    fireEvent.click(getCommandItem("Cesar Alvarez Martinez"));
     expect(screen.getByDisplayValue("700270843")).toBeInTheDocument();
   }, 10000);
 
