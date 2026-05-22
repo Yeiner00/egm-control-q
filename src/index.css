@@ -717,6 +717,12 @@
     transform: translateY(-1px);
   }
 
+  .sidebar-rail .sidebar-nav-item-active:hover {
+    background-color: hsl(var(--primary) / 0.07);
+    border-color: hsl(var(--primary) / 0.14);
+    color: hsl(var(--primary));
+  }
+
   .sidebar-rail .sidebar-nav-item-active::before {
     content: none;
   }
@@ -743,6 +749,11 @@
     box-shadow:
       0 22px 48px -34px rgba(45, 212, 191, 0.28),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .sidebar-rail .sidebar-nav-item-active:hover {
+    background-color: rgb(255 255 255 / 0.08);
+    color: hsl(var(--teal-light));
   }
 
   .header-icon-button {
