@@ -423,11 +423,11 @@
   }
 
   .sidebar-rail {
-    @apply fixed inset-y-0 left-0 z-50 w-[5.25rem] flex-col items-center overflow-visible border-r border-slate-300/85 bg-slate-100 px-2 pb-4 pt-0 text-slate-700 shadow-[18px_0_36px_-30px_rgba(15,23,42,0.12)];
+    @apply fixed inset-y-0 left-0 z-50 w-[5.75rem] flex-col items-center overflow-visible border-r border-slate-200/90 bg-slate-50 px-2 pb-4 pt-0 text-slate-700 shadow-[18px_0_36px_-30px_rgba(15,23,42,0.22)];
   }
 
   .dark .sidebar-rail {
-    @apply border-white/10 bg-navy text-white shadow-[22px_0_55px_-28px_rgba(2,8,23,0.95)];
+    @apply border-white/10 bg-navy text-white shadow-[24px_0_56px_-34px_rgba(2,8,23,0.95)];
   }
 
   .sidebar-brand {
@@ -443,7 +443,7 @@
   }
 
   .sidebar-brand-compact {
-    @apply flex min-h-[4.75rem] w-full items-center justify-center border-b border-slate-300/85 pb-0 dark:border-white/10;
+    @apply flex min-h-[4.1rem] w-full items-center justify-center border-b border-slate-200/90 pb-0 dark:border-white/10;
   }
 
   .sidebar-brand-mark-compact {
@@ -500,7 +500,7 @@
   }
 
   .sidebar-footer {
-    @apply mt-auto w-full border-t border-slate-300/85 pt-4 dark:border-white/10;
+    @apply mt-auto w-full border-t border-slate-200/90 pt-4 dark:border-white/10;
   }
 
   .sidebar-user-chip {
@@ -508,7 +508,7 @@
   }
 
   .sidebar-user-card {
-    @apply mx-auto flex w-full max-w-[4.1rem] items-center justify-center rounded-[0.5rem] border border-slate-300 bg-white px-2 py-3 text-center shadow-[0_12px_24px_-24px_rgba(15,23,42,0.22)];
+    @apply mx-auto flex w-full items-center justify-center rounded-[0.5rem] border border-slate-200/90 bg-white px-3 py-3 text-center shadow-[0_14px_28px_-26px_rgba(15,23,42,0.3)];
   }
 
   .dark .sidebar-user-card {
@@ -523,6 +523,59 @@
     @apply h-2.5 w-2.5 rounded-full bg-teal-light shadow-[0_0_0_4px_rgba(45,212,191,0.16)];
   }
 
+  .sidebar-rail .sidebar-nav {
+    @apply mt-6 w-full gap-3 px-0;
+  }
+
+  .sidebar-rail .sidebar-nav-item {
+    @apply min-h-[4rem] w-full gap-1 px-1 py-2 text-slate-400 hover:border-slate-200/80 hover:bg-white/50 hover:text-primary;
+    box-shadow: none;
+    transition-property: color, background-color, border-color, box-shadow, transform;
+  }
+
+  .sidebar-rail .sidebar-nav-item:focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.45);
+    outline-offset: 3px;
+  }
+
+  .sidebar-rail .sidebar-nav-item-active {
+    @apply text-primary;
+    background-color: hsl(var(--primary) / 0.07);
+    border-color: hsl(var(--primary) / 0.14);
+    box-shadow:
+      0 22px 40px -26px rgba(15, 23, 42, 0.48),
+      0 10px 20px -18px rgba(15, 23, 42, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    transform: translateY(-1px);
+  }
+
+  .sidebar-rail .sidebar-nav-item-active::before {
+    content: none;
+  }
+
+  .sidebar-rail .sidebar-nav-icon {
+    @apply h-9 w-9;
+  }
+
+  .sidebar-rail .sidebar-nav-label {
+    @apply text-[0.7rem] font-bold leading-tight;
+  }
+
+  .sidebar-rail .sidebar-user-name {
+    @apply text-[0.68rem];
+  }
+
+  .dark .sidebar-rail .sidebar-nav-item {
+    @apply text-white/45 hover:border-white/10 hover:bg-white/5 hover:text-white;
+  }
+
+  .dark .sidebar-rail .sidebar-nav-item-active {
+    @apply border-white/10 text-teal-light;
+    background-color: rgb(255 255 255 / 0.08);
+    box-shadow:
+      0 22px 48px -34px rgba(45, 212, 191, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
   .header-icon-button {
     @apply h-10 w-10 border border-slate-300 bg-white text-slate-700 shadow-[0_6px_20px_-18px_rgba(15,23,42,0.22)] hover:bg-slate-100 hover:text-slate-900;
   }
@@ -563,7 +616,7 @@
     }
 
     .sidebar-brand-compact {
-      min-height: 4.2rem;
+      min-height: 4.1rem;
     }
 
     .sidebar-nav {

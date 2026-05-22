@@ -173,7 +173,7 @@ const Index = () => {
           </div>
         </aside>
 
-        <div className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden lg:pl-[5.25rem]">
+        <div className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden lg:pl-[5.75rem]">
           <header className="top-header">
             <div className="relative z-10 flex min-h-[4.75rem] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:min-h-[4.1rem] lg:px-6 lg:py-2.5">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
