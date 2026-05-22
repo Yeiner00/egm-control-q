@@ -99,7 +99,6 @@ interface Props {
 }
 
 const MAX_MOTIVOS = 10;
-const MAX_TRIPULANTES = 6;
 const siteRowGridClass = "sm:grid-cols-[minmax(0,1fr)_minmax(0,0.5fr)_minmax(0,0.9fr)_2rem]";
 const inspectedBoatRowGridClass = "lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)_minmax(0,0.82fr)_minmax(0,0.48fr)_minmax(0,0.9fr)_2rem]";
 const compactRowInputClass = "min-w-0 h-8 lg:h-8 px-3 py-0 text-sm";
@@ -157,13 +156,13 @@ interface MultiValueSelectorProps {
   value: string[];
   onChange: (value: string[]) => void;
   options: string[];
-  maxSelected: number;
+  maxSelected?: number;
   singularLabel: string;
   pluralLabel: string;
   placeholder: string;
   searchPlaceholder: string;
   emptyText: string;
-  maxText: string;
+  maxText?: string;
   blockedValues?: string[];
   blockedLabel?: string;
   pending: boolean;
@@ -199,7 +198,7 @@ const MultiValueSelector = ({
     () => new Set(blockedValues.filter(Boolean).map(normalizeSelectionValue)),
     [blockedValues],
   );
-  const hasReachedLimit = selectedValues.length >= maxSelected;
+  const hasReachedLimit = typeof maxSelected === "number" && selectedValues.length >= maxSelected;
 
   const filteredOptions = useMemo(() => {
     const normalizedSearch = normalizeSelectionValue(cleanSearch);
@@ -215,12 +214,12 @@ const MultiValueSelector = ({
     const uniqueValues = nextValue.reduce<string[]>((items, item) => {
       const cleanValue = item.trim();
       const normalizedValue = normalizeSelectionValue(cleanValue);
-      if (!cleanValue || blockedSet.has(normalizedValue)) return items;
+      if (!cleanValue) return items;
       if (items.some((existing) => normalizeSelectionValue(existing) === normalizedValue)) return items;
       return [...items, cleanValue];
     }, []);
 
-    onChange(uniqueValues.slice(0, maxSelected));
+    onChange(typeof maxSelected === "number" ? uniqueValues.slice(0, maxSelected) : uniqueValues);
   };
 
   const toggleValue = (nextValue: string) => {
@@ -294,7 +293,7 @@ const MultiValueSelector = ({
                 })}
               </CommandGroup>
             </CommandList>
-            {hasReachedLimit && (
+            {hasReachedLimit && maxText && (
               <p className="border-t border-border/60 px-3 py-2 text-[0.7rem] font-medium text-muted-foreground">
                 {maxText}
               </p>
@@ -306,7 +305,7 @@ const MultiValueSelector = ({
       {selectedValues.length === 0 ? (
         <p className="text-xs text-muted-foreground">{emptyText}</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className={renderSelected ? "space-y-1.5" : "flex flex-wrap gap-1.5"}>
           {selectedValues.map((item) => renderSelected ? (
             <div key={item}>{renderSelected(item, () => removeValue(item))}</div>
           ) : (
@@ -656,26 +655,11 @@ const BoatReportForm = ({
 
   const updateTripulantes = (names: string[]) => {
     const cleanNames = normalizeKnownPersonNames(names);
-    const next = cleanNames.map((name) => {
-      const existing = data.tripulantes.find(
-        (tripulante) => normalizePersonSelectionValue(tripulante.nombre) === normalizePersonSelectionValue(name),
-      );
-      if (existing) return { ...existing, nombre: name };
-      const officer = findOfficerByName(name);
-      return {
-        nombre: name,
-        cedula: officer?.identificacion || "",
-      };
-    });
+    const next = cleanNames.map((name) => ({
+      nombre: name,
+      cedula: "",
+    }));
     update("tripulantes", next);
-  };
-
-  const updateTripulanteCedula = (name: string, cedula: string) => {
-    update("tripulantes", data.tripulantes.map((tripulante) => (
-      normalizePersonSelectionValue(tripulante.nombre) === normalizePersonSelectionValue(name)
-        ? { ...tripulante, cedula }
-        : tripulante
-    )));
   };
 
   const updateSitio = (index: number, key: keyof BoatSiteData, value: string) => {
@@ -775,37 +759,14 @@ const BoatReportForm = ({
                 value={data.tripulantes.map((tripulante) => tripulante.nombre).filter(Boolean)}
                 onChange={updateTripulantes}
                 options={officerOptions}
-                maxSelected={MAX_TRIPULANTES}
                 singularLabel="tripulante"
                 pluralLabel="tripulantes"
                 placeholder="Seleccionar tripulantes..."
                 searchPlaceholder="Buscar o escribir tripulante..."
                 emptyText="Sin tripulantes seleccionados"
-                maxText="Maximo 6 tripulantes seleccionados."
                 blockedValues={[data.capitan, data.encargado_mision]}
                 blockedLabel="Asignado"
                 pending={showPendingState && hasPendingItems(data.tripulantes)}
-                renderSelected={(name, remove) => {
-                  const tripulante = data.tripulantes.find(
-                    (person) => normalizePersonSelectionValue(person.nombre) === normalizePersonSelectionValue(name),
-                  );
-                  return (
-                    <div className="grid items-center gap-1 sm:grid-cols-[minmax(9rem,1fr)_12rem_2.25rem]">
-                      <Badge variant="secondary" className="h-9 min-w-0 justify-start rounded-md border border-border/60 bg-muted/70 px-3 text-muted-foreground">
-                        <span className="truncate">{name}</span>
-                      </Badge>
-                      <Input
-                        placeholder="Cedula"
-                        value={tripulante?.cedula || ""}
-                        onChange={(event) => updateTripulanteCedula(name, event.target.value)}
-                        className={pendingInputClass(tripulante?.cedula, "h-9 lg:h-9 px-3 py-0 text-sm")}
-                      />
-                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9" aria-label={`Quitar ${name}`} onClick={remove}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  );
-                }}
               />
               <PendingHint show={data.tripulantes.length === 0} />
             </div>

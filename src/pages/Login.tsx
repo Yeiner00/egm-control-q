@@ -56,23 +56,39 @@ const Login = () => {
             <Label htmlFor="email">Correo electrónico</Label>
             <Input
               id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
               placeholder="usuario@ejemplo.com"
+              aria-errormessage="email-error"
               required
             />
+            <p id="email-error" className="form-error-message">
+              <span aria-hidden="true">!</span>
+              Ingrese un correo valido.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Contraseña</Label>
             <Input
               id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              aria-errormessage="password-error"
               placeholder="••••••••"
               required
             />
+            <p id="password-error" className="form-error-message">
+              <span aria-hidden="true">!</span>
+              Ingrese la contrasena.
+            </p>
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Iniciar Sesión"}

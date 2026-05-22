@@ -40,7 +40,7 @@ const mapPersonNameList = (value: unknown) => {
   return normalizeKnownPersonNames(values);
 };
 
-const mapPersonsWithCedula = (value: unknown) => {
+const mapBoatCrewMember = (value: unknown) => {
   if (typeof value === "string") {
     return normalizeKnownPersonNames([value]).map((nombre) => ({ nombre, cedula: "" }));
   }
@@ -49,7 +49,7 @@ const mapPersonsWithCedula = (value: unknown) => {
     const names = normalizeKnownPersonNames([(record.nombre as string) || ""]);
     return names.map((nombre) => ({
       nombre,
-      cedula: names.length === 1 ? (record.cedula as string) || "" : "",
+      cedula: "",
     }));
   }
   return [];
@@ -116,7 +116,7 @@ export const mapToBoatFormData = (data: ExtractedReportData): BoatFormData => ({
   encargado_mision_cedula: (data.encargado_mision_cedula as string) || "",
   operacional: normalizeKnownPersonName((data.operacional as string) || ""),
   operacional_cedula: (data.operacional_cedula as string) || "",
-  tripulantes: Array.isArray(data.tripulantes) ? data.tripulantes.flatMap(mapPersonsWithCedula) : [],
+  tripulantes: Array.isArray(data.tripulantes) ? data.tripulantes.flatMap(mapBoatCrewMember) : [],
   personas_particulares: mapPersonNameList(data.personas_particulares),
   sitios_visitados: Array.isArray(data.sitios_visitados) ? data.sitios_visitados.map(mapSiteWithPosition) : [],
   embarcaciones_inspeccionadas: Array.isArray(data.embarcaciones_inspeccionadas)

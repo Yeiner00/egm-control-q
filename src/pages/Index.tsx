@@ -1,4 +1,5 @@
-import { Suspense, lazy, useState, useEffect, useCallback } from "react";
+import { Suspense, lazy, useState, useEffect, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
@@ -33,6 +34,10 @@ type ReportEditTarget =
   | { tipo: "vehiculo"; reportId: string }
   | { tipo: "embarcacion"; reportId: string };
 type SubtabRequest<T extends string> = { value: T; nonce: number; editTarget?: ReportEditTarget };
+type ViewTransitionResult = { finished?: Promise<unknown> };
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (callback: () => void) => ViewTransitionResult;
+};
 
 const NAV_ITEMS: Array<{
   value: AppTab;
@@ -64,6 +69,7 @@ const Index = () => {
   const [reportesSubtabRequest, setReportesSubtabRequest] = useState<SubtabRequest<ReportesSubtab> | null>(null);
   const [zarpesSubtabRequest, setZarpesSubtabRequest] = useState<SubtabRequest<ZarpesSubtab> | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const workspaceRef = useRef<HTMLElement | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -88,11 +94,35 @@ const Index = () => {
   }, [navigate]);
 
   const handleTabChange = (value: AppTab) => {
-    setActiveTab(value);
-    setSidebarOpen(false);
-    if (value !== "reportes") {
-      setReportesSubtabRequest(null);
+    const applyTabChange = () => {
+      setActiveTab(value);
+      setSidebarOpen(false);
+      if (value !== "reportes") {
+        setReportesSubtabRequest(null);
+      }
+    };
+
+    if (value === activeTab) {
+      applyTabChange();
+      return;
     }
+
+    const focusWorkspace = () => {
+      window.requestAnimationFrame(() => workspaceRef.current?.focus({ preventScroll: true }));
+    };
+    const viewTransitionDocument = document as ViewTransitionDocument;
+    const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    if (!prefersReducedMotion && typeof viewTransitionDocument.startViewTransition === "function") {
+      const transition = viewTransitionDocument.startViewTransition(() => {
+        flushSync(applyTabChange);
+      });
+      transition.finished?.finally(focusWorkspace);
+      return;
+    }
+
+    applyTabChange();
+    focusWorkspace();
   };
 
   const openReportesManual = () => {
@@ -214,7 +244,11 @@ const Index = () => {
             </div>
           </header>
 
-          <main className="panel-section app-workspace min-h-0 flex-1 space-y-6 overflow-y-auto py-6 sm:py-8 lg:space-y-5 lg:py-5">
+          <main
+            ref={workspaceRef}
+            tabIndex={-1}
+            className="panel-section app-workspace min-h-0 flex-1 space-y-6 overflow-y-auto py-6 sm:py-8 lg:space-y-5 lg:py-5"
+          >
             <TabsContent value="inicio">
               <Suspense fallback={<TabFallback />}>
                 <InicioTab

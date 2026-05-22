@@ -415,7 +415,7 @@ const buildBoatPatches = ({ report, people, motivos, sitios, inspectedBoats }: R
       H35: toOptionalNumber(encargadoPerson?.cedula),
       H36: toOptionalNumber(operacionalPerson?.cedula),
       H37: toOptionalNumber(capitanPerson?.cedula),
-      H38: toOptionalNumber(firstPersonByRole(people, ["tripulante"])?.cedula),
+      H38: null,
     },
   };
 };

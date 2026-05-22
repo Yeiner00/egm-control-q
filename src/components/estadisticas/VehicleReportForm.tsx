@@ -152,7 +152,7 @@ const MultiValueSelector = ({
     const uniqueValues = nextValue.reduce<string[]>((items, item) => {
       const cleanValue = item.trim();
       const normalizedValue = normalizeSelectionValue(cleanValue);
-      if (!cleanValue || normalizedValue === blockedNormalized) return items;
+      if (!cleanValue) return items;
       if (items.some((existing) => normalizeSelectionValue(existing) === normalizedValue)) return items;
       return [...items, cleanValue];
     }, []);

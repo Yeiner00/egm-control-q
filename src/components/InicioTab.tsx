@@ -563,7 +563,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
         </div>
 
         <div className="space-y-5 lg:space-y-3.5">
-          <Card className="overflow-hidden">
+          <Card className="deferred-render-region overflow-hidden">
             <CardHeader className="border-b border-border/70 bg-card">
               <div className="flex items-start gap-4 lg:gap-3">
                 <div className="flex shrink-0 items-center justify-center pt-0.5 text-primary">
@@ -715,7 +715,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
           </CardContent>
         </Card>
 
-          <Card className="overflow-hidden">
+          <Card className="deferred-render-region overflow-hidden">
             <CardHeader className="border-b border-border/70 bg-card">
               <div className="flex items-start gap-4 lg:gap-3">
                 <div className="flex shrink-0 items-center justify-center pt-0.5 text-primary">

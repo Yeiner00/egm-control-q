@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import type { ProposalRoleSummary, ProposalTotalsGroup } from "@/lib/proposalTotals";
 import type { LucideIcon } from "lucide-react";
-import { Copy } from "lucide-react";
+import { Anchor, CarFront, ClipboardCheck, Copy, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProposalTotalsMetric {
@@ -19,6 +19,21 @@ interface ProposalTotalsSectionProps {
 }
 
 const formatReportChip = (reportNumber: string) => `#${reportNumber}`;
+
+const ROLE_ICONS: Record<string, LucideIcon> = {
+  Capitan: Anchor,
+  Chofer: CarFront,
+  "Jefe de mision": ClipboardCheck,
+  Operacional: ShieldCheck,
+  "Sub oficial": ShieldCheck,
+  Tripulante: UsersRound,
+  Acompanante: UsersRound,
+};
+
+const getRoleIcon = (label: string) => ROLE_ICONS[label] ?? UserRound;
+
+const formatReportCount = (count: number) => `${count} reporte${count === 1 ? "" : "s"}`;
+const formatRoleCount = (count: number) => `${count} ${count === 1 ? "vez" : "veces"}`;
 
 const ProposalTotalsSection = ({
   metrics,
@@ -62,21 +77,23 @@ const ProposalTotalsSection = ({
           {unitGroups.map((group) => (
             <div key={group.name} className="totals-list-card">
               <div className="totals-list-header">
-                <div className="space-y-0.5">
+                <div className="totals-heading-main">
                   <div className="totals-list-title">{group.name}</div>
-                  <div className="totals-list-meta">
-                    {group.reportNumbers.length} reporte{group.reportNumbers.length === 1 ? "" : "s"}
-                  </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="totals-copy-button"
-                  onClick={() => copyReportList(group.reportNumbers, group.name)}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
+                <div className="totals-heading-actions">
+                  <div className="totals-list-meta">{formatReportCount(group.reportNumbers.length)}</div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="totals-copy-button"
+                    title={`Copiar reportes de ${group.name}`}
+                    aria-label={`Copiar reportes de ${group.name}`}
+                    onClick={() => copyReportList(group.reportNumbers, group.name)}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
               <div className="totals-chip-list">
                 {group.reportNumbers.map((reportNumber) => (
@@ -90,21 +107,23 @@ const ProposalTotalsSection = ({
 
           <div className="totals-list-card totals-list-card-total">
             <div className="totals-list-header">
-              <div className="space-y-0.5">
+              <div className="totals-heading-main">
                 <div className="totals-list-title">Lista total</div>
-                <div className="totals-list-meta">
-                  {totalReportNumbers.length} reporte{totalReportNumbers.length === 1 ? "" : "s"}
-                </div>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="totals-copy-button"
-                onClick={() => copyReportList(totalReportNumbers, "lista total")}
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
+              <div className="totals-heading-actions">
+                <div className="totals-list-meta">{formatReportCount(totalReportNumbers.length)}</div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="totals-copy-button"
+                  title="Copiar lista total"
+                  aria-label="Copiar lista total"
+                  onClick={() => copyReportList(totalReportNumbers, "lista total")}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
             <div className="totals-chip-list">
               {totalReportNumbers.map((reportNumber) => (
@@ -121,20 +140,43 @@ const ProposalTotalsSection = ({
         <div className="totals-block-heading">Roles destacados</div>
         {roleSummaries.length > 0 ? (
           <div className="totals-role-grid">
-            {roleSummaries.map((role) => (
-              <div key={role.label} className="totals-role-card">
-                <div className="totals-role-title">
-                  {role.label}: {role.count} {role.count === 1 ? "vez" : "veces"}
+            {roleSummaries.map((role) => {
+              const RoleIcon = getRoleIcon(role.label);
+
+              return (
+                <div key={role.label} className="totals-role-card">
+                  <div className="totals-role-header">
+                    <div className="totals-heading-main">
+                      <span className="totals-role-icon" aria-hidden="true">
+                        <RoleIcon className="h-4 w-4" />
+                      </span>
+                      <div className="totals-role-title">{role.label}</div>
+                    </div>
+                    <div className="totals-heading-actions">
+                      <div className="totals-role-meta">{formatRoleCount(role.count)}</div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="totals-copy-button"
+                        title={`Copiar reportes de ${role.label}`}
+                        aria-label={`Copiar reportes de ${role.label}`}
+                        onClick={() => copyReportList(role.reportNumbers, role.label)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="totals-chip-list">
+                    {role.reportNumbers.map((reportNumber) => (
+                      <span key={`${role.label}-${reportNumber}`} className="totals-chip">
+                        {formatReportChip(reportNumber)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="totals-chip-list">
-                  {role.reportNumbers.map((reportNumber) => (
-                    <span key={`${role.label}-${reportNumber}`} className="totals-chip">
-                      {formatReportChip(reportNumber)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

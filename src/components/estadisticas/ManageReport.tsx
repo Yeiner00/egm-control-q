@@ -41,6 +41,7 @@ import VehicleReportForm, { type VehicleFormData } from "./VehicleReportForm";
 import BoatReportForm, { type BoatFormData, type InspectedBoatData } from "./BoatReportForm";
 import { calcTotalHours } from "@/lib/report-utils";
 import { normalizeReportNumber, normalizeReportUnit } from "@/lib/reportNumber";
+import { filterReportOptions } from "@/lib/reportSearch";
 import { buildLegacyReportMotiveRows, buildReportMotiveRows, loadMotiveOptions } from "@/lib/motives";
 import { loadAvailableReportYears } from "@/lib/reportYears";
 import { getErrorMessage } from "@/lib/errorMessage";
@@ -109,6 +110,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportSearch, setReportSearch] = useState("");
   const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
   const [preview, setPreview] = useState<ReportPreview | null>(null);
   const [personas, setPersonas] = useState<ReportPersonWithRoles[]>([]);
@@ -154,7 +156,13 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     ),
     [pinnedReportOption, reportNumbers],
   );
-  const allReportsSelected = reportOptions.length > 0 && selectedReportIds.length === reportOptions.length;
+  const visibleReportOptions = useMemo(
+    () => filterReportOptions(reportOptions, reportSearch),
+    [reportOptions, reportSearch],
+  );
+  const allReportsSelected = reportOptions.length > 0 && reportOptions.every((report) => selectedReportIds.includes(report.id));
+  const allVisibleReportsSelected =
+    visibleReportOptions.length > 0 && visibleReportOptions.every((report) => selectedReportIds.includes(report.id));
   const selectedReports = selectedReportIds
     .map((id) => reportOptions.find((report) => report.id === id))
     .filter(Boolean) as ReportOption[];
@@ -176,48 +184,75 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
   };
 
   const toggleAllReports = () => {
-    setSelectedReportIds((prev) =>
-      prev.length === reportOptions.length ? [] : reportOptions.map((report) => report.id),
-    );
+    const visibleIds = visibleReportOptions.map((report) => report.id);
+    setSelectedReportIds((prev) => {
+      const visibleIdSet = new Set(visibleIds);
+      if (visibleIds.every((id) => prev.includes(id))) {
+        return prev.filter((id) => !visibleIdSet.has(id));
+      }
+
+      return Array.from(new Set([...prev, ...visibleIds]));
+    });
   };
 
   useEffect(() => {
+    let active = true;
+
     const loadYears = async () => {
       try {
         const availableYears = await loadAvailableReportYears(table);
+        if (!active) return;
+
         setYears(availableYears);
         if (availableYears.length > 0 && !availableYears.includes(year)) {
           setYear(availableYears[0]);
         }
       } catch (error) {
+        if (!active) return;
+
         toast.error("No se pudieron cargar los años disponibles", {
           description: getErrorMessage(error),
         });
       }
     };
     loadYears();
+
+    return () => {
+      active = false;
+    };
   }, [table, year]);
 
   useEffect(() => {
+    let active = true;
+
+    setUnidades([]);
+    setUnidad("");
+
     const loadUnits = async () => {
       try {
+        let nextUnidades: string[] = [];
+
         if (tipo === "vehiculo") {
           const { data, error } = await supabase
             .from("reportes_vehiculo")
             .select("vehiculo")
             .eq("anio", parseInt(year));
           if (error) throw error;
-          setUnidades([...new Set((data || []).map((d) => d.vehiculo).filter(Boolean) as string[])].sort());
+          nextUnidades = [...new Set((data || []).map((d) => d.vehiculo).filter(Boolean) as string[])].sort();
         } else {
           const { data, error } = await supabase
             .from("reportes_embarcacion")
             .select("embarcacion")
             .eq("anio", parseInt(year));
           if (error) throw error;
-          setUnidades([...new Set((data || []).map((d) => d.embarcacion).filter(Boolean) as string[])].sort());
+          nextUnidades = [...new Set((data || []).map((d) => d.embarcacion).filter(Boolean) as string[])].sort();
         }
-        setUnidad("");
+        if (!active) return;
+
+        setUnidades(nextUnidades);
       } catch (error) {
+        if (!active) return;
+
         setUnidades([]);
         setUnidad("");
         toast.error("No se pudieron cargar las unidades", {
@@ -226,9 +261,17 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
       }
     };
     loadUnits();
+
+    return () => {
+      active = false;
+    };
   }, [tipo, year]);
 
   useEffect(() => {
+    let active = true;
+
+    setPeopleOptions([]);
+
     const loadFormOptions = async () => {
       try {
         const [loadedPeopleOptions, loadedMotiveOptions, loadedSiteOptions] = await Promise.all([
@@ -236,10 +279,14 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           loadMotiveOptions(),
           loadSiteOptions(),
         ]);
+        if (!active) return;
+
         setPeopleOptions(loadedPeopleOptions);
         setMotiveOptions(loadedMotiveOptions);
         setSiteOptions(loadedSiteOptions);
       } catch (error) {
+        if (!active) return;
+
         setPeopleOptions([]);
         setMotiveOptions([]);
         setSiteOptions(DEFAULT_REPORT_SITE_OPTIONS);
@@ -249,10 +296,15 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
       }
     };
     loadFormOptions();
+
+    return () => {
+      active = false;
+    };
   }, [tipo]);
 
   useEffect(() => {
     if (!initialSelection?.reportId) return;
+    let active = true;
 
     const loadInitialSelection = async () => {
       try {
@@ -274,6 +326,8 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
             .single();
           if (error) throw error;
           if (!data) return;
+          if (!active) return;
+
           if (data.fecha) setYear(String(new Date(`${data.fecha}T00:00:00`).getFullYear()));
           setPinnedReportOption({
             id: data.id,
@@ -293,6 +347,8 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           .single();
         if (error) throw error;
         if (!data) return;
+        if (!active) return;
+
         if (data.fecha) setYear(String(new Date(`${data.fecha}T00:00:00`).getFullYear()));
         setPinnedReportOption({
           id: data.id,
@@ -303,6 +359,8 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         setSelectedReportIds([data.id]);
         setSelectedId(data.id);
       } catch (error) {
+        if (!active) return;
+
         toast.error("No se pudo abrir el reporte seleccionado", {
           description: getErrorMessage(error),
         });
@@ -310,9 +368,15 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     };
 
     loadInitialSelection();
+
+    return () => {
+      active = false;
+    };
   }, [initialSelection?.nonce, initialSelection?.reportId, initialSelection?.tipo]);
 
   useEffect(() => {
+    let active = true;
+
     const load = async () => {
       try {
         let results: ReportOption[] = [];
@@ -350,12 +414,15 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
             })
             .map((d) => ({ id: d.id, no_reporte: d.no_reporte, fecha: d.fecha, unidad: d.embarcacion }));
         }
+        if (!active) return;
 
         setReportNumbers(results);
         const availableIds = new Set(results.map((report) => report.id));
         const pinnedId = pinnedReportOption?.id ?? initialSelection?.reportId;
         setSelectedReportIds((prev) => prev.filter((id) => availableIds.has(id) || id === pinnedId));
       } catch (error) {
+        if (!active) return;
+
         setReportNumbers([]);
         setSelectedReportIds([]);
         toast.error("No se pudieron cargar los reportes", {
@@ -364,6 +431,10 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
       }
     };
     load();
+
+    return () => {
+      active = false;
+    };
   }, [tipo, year, selectedMonths, unidad, pinnedReportOption?.id, initialSelection?.reportId]);
 
   useEffect(() => {
@@ -380,6 +451,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
       setEditing(false);
       return;
     }
+    let active = true;
 
     const load = async () => {
       try {
@@ -404,6 +476,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           : { data: [], error: null };
         if (inspectedBoatsError) throw inspectedBoatsError;
         const peopleMap = await loadReportPeopleByIds([selectedId], tipo);
+        if (!active) return;
 
         setPreview(report);
         setPersonas(peopleMap.get(selectedId) || []);
@@ -421,6 +494,8 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           posicion: item.posicion || "",
         })));
       } catch (error) {
+        if (!active) return;
+
         setPreview(null);
         setPersonas([]);
         setMotivos([]);
@@ -433,6 +508,10 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     };
 
     load();
+
+    return () => {
+      active = false;
+    };
   }, [selectedId, table, tipo]);
 
   const startEdit = useCallback(() => {
@@ -484,7 +563,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
       const encargado = encargadoPerson?.nombre || "";
       const tripulantes = personas
         .filter((p) => p.roles.includes("tripulante"))
-        .map((p) => ({ nombre: p.nombre, cedula: p.cedula || "" }));
+        .map((p) => ({ nombre: p.nombre, cedula: "" }));
       const particulares = personas
         .filter((p) => p.roles.includes("particular") || p.roles.includes("persona_particular"))
         .map((p) => p.nombre);
@@ -712,7 +791,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
             : []),
           ...boatData.tripulantes
             .filter((person) => person.nombre)
-            .map((person) => ({ nombre: normalizeName(person.nombre), cedula: person.cedula || null, roles: ["tripulante"] })),
+            .map((person) => ({ nombre: normalizeName(person.nombre), roles: ["tripulante"] })),
           ...boatData.personas_particulares
             .filter(Boolean)
             .map((name) => ({ nombre: normalizeName(name), roles: ["particular"] })),
@@ -908,18 +987,27 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[320px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar numero de reporte..." />
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Buscar numero de reporte..."
+                      value={reportSearch}
+                      onValueChange={setReportSearch}
+                      inputMode="numeric"
+                    />
                     <CommandList>
-                      <CommandEmpty>No se encontro.</CommandEmpty>
                       <CommandGroup>
-                        {reportOptions.length > 0 && (
+                        {visibleReportOptions.length > 0 && (
                           <CommandItem value="Todos los reportes" onSelect={toggleAllReports}>
-                            <Checkbox checked={allReportsSelected} className="mr-2" />
+                            <Checkbox checked={allVisibleReportsSelected} className="mr-2" />
                             Todos los reportes
                           </CommandItem>
                         )}
-                        {reportOptions.map((r) => (
+                        {visibleReportOptions.length === 0 && (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            No se encontro.
+                          </div>
+                        )}
+                        {visibleReportOptions.map((r) => (
                           <CommandItem
                             key={r.id}
                             value={`${r.no_reporte} ${r.unidad || ""} ${r.fecha || ""}`}
@@ -975,7 +1063,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
                           }
                         }}
                       >
-                        <div className="rounded-[calc(var(--radius)-0.08rem)] border border-border/80 bg-card/70">
+                        <div className="deferred-report-region rounded-[calc(var(--radius)-0.08rem)] border border-border/80 bg-card/70">
                           <CollapsibleTrigger asChild>
                             <button className="flex w-full items-center justify-between gap-3 rounded-[calc(var(--radius)-0.08rem)] p-3 text-left text-sm hover:bg-muted/40">
                               <div className="flex min-w-0 items-center gap-2">

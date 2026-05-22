@@ -464,7 +464,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
         : []),
       ...bd.tripulantes
         .filter((person) => person.nombre)
-        .map((person) => ({ nombre: normalizeName(person.nombre), cedula: person.cedula || null, roles: ["tripulante"] })),
+        .map((person) => ({ nombre: normalizeName(person.nombre), roles: ["tripulante"] })),
       ...bd.personas_particulares
         .filter(Boolean)
         .map((name) => ({ nombre: normalizeName(name), roles: ["particular"] })),

@@ -29,7 +29,7 @@ describe("report-utils person mapping", () => {
       encargado_mision: "Agente Cesar Alvares Martinez",
       operacional: "SInt Michael Rojas Brenes",
       tripulantes: [
-        { nombre: "Jorge Gonzales Barrantes y Agente Luis Carlos Gonzalez Jarquin", cedula: "" },
+        { nombre: "Jorge Gonzales Barrantes y Agente Luis Carlos Gonzalez Jarquin", cedula: "123456789" },
       ],
     });
 

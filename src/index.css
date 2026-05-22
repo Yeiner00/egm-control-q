@@ -197,6 +197,20 @@
     @apply border-warning/70 bg-warning/10 focus-visible:ring-warning/40;
   }
 
+  .form-field-control:user-invalid,
+  .form-field-control.user-invalid-fallback {
+    @apply border-destructive bg-destructive/10 focus-visible:border-destructive focus-visible:ring-destructive/20;
+  }
+
+  .form-error-message {
+    @apply hidden items-center gap-1.5 text-[0.72rem] font-semibold text-destructive;
+  }
+
+  .form-field-control:user-invalid ~ .form-error-message,
+  .form-field-control.user-invalid-fallback ~ .form-error-message {
+    @apply flex;
+  }
+
   .report-pending-hint {
     @apply text-[0.7rem] font-semibold text-warning;
   }
@@ -274,15 +288,24 @@
   }
 
   .totals-list-header {
-    @apply flex items-start justify-between gap-2;
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .totals-heading-main {
+    @apply flex min-w-0 items-center gap-2;
+  }
+
+  .totals-heading-actions {
+    @apply ml-auto flex shrink-0 items-center gap-1.5;
   }
 
   .totals-list-title {
-    @apply text-sm font-semibold text-foreground;
+    @apply min-w-0 truncate text-sm font-semibold text-foreground;
   }
 
   .totals-list-meta {
-    @apply text-xs text-muted-foreground;
+    @apply whitespace-nowrap text-xs text-muted-foreground;
+    text-box: trim-both cap alphabetic;
   }
 
   .totals-copy-button {
@@ -309,8 +332,22 @@
     @apply space-y-2 rounded-[0.34rem] border border-border/60 bg-background/70 px-3 py-2.5;
   }
 
+  .totals-role-header {
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .totals-role-icon {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.3rem] border border-primary/15 bg-primary/10 text-primary;
+  }
+
   .totals-role-title {
-    @apply text-sm font-semibold text-foreground;
+    @apply min-w-0 text-sm font-semibold text-foreground;
+    text-box: trim-both cap alphabetic;
+  }
+
+  .totals-role-meta {
+    @apply whitespace-nowrap text-xs text-muted-foreground;
+    text-box: trim-both cap alphabetic;
   }
 
   .section-icon-shell {
@@ -318,72 +355,177 @@
   }
 
   .proposal-report-card {
-    @apply overflow-hidden rounded-[0.34rem] border border-border/70 bg-card/95 shadow-[0_10px_20px_-24px_rgba(15,23,42,0.18)];
+    @apply flex h-full flex-col overflow-hidden rounded-[0.5rem] border bg-white text-slate-600 transition-colors duration-150;
+    border-color: rgb(226 232 240 / 0.78);
+    box-shadow: 0 20px 48px -34px rgba(15, 23, 42, 0.52), 0 1px 2px rgba(15, 23, 42, 0.04);
+    container-type: inline-size;
   }
 
-  .proposal-report-top {
-    @apply grid gap-2.5 px-3 py-2.5 sm:px-3.5;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  .dark .proposal-report-card {
+    @apply border-white/10 bg-card text-slate-300 shadow-none;
   }
 
-  .proposal-report-date {
-    @apply text-[1.15rem] font-bold tracking-tight text-foreground;
+  .proposal-report-main {
+    @apply flex flex-1 flex-col px-4 pb-3.5 pt-4 sm:px-5 sm:pb-3.5 sm:pt-4;
   }
 
-  .proposal-report-pill {
-    @apply inline-flex items-center whitespace-nowrap rounded-[0.3rem] border border-primary/35 bg-primary/5 px-1.5 py-0.5 text-[0.82rem] font-semibold text-primary;
+  .proposal-report-meta {
+    @apply grid items-center gap-x-5 gap-y-4;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .proposal-report-role {
-    @apply inline-flex items-center gap-1.5 text-[0.82rem] font-medium text-foreground;
+  .proposal-report-meta-cluster {
+    @apply flex min-w-0 flex-wrap items-center justify-start gap-x-6 gap-y-3;
   }
 
-  .proposal-report-unit {
-    @apply text-[0.96rem] font-bold uppercase tracking-tight text-foreground;
+  .proposal-report-station {
+    @apply inline-flex w-fit max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[0.3rem] bg-slate-100 px-2.5 py-1 text-[0.84rem] font-extrabold uppercase leading-none text-slate-800;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
   }
 
-  .proposal-report-chip-soft {
-    @apply inline-flex items-center rounded-[0.3rem] bg-secondary px-1.5 py-0.5 text-[0.8rem] font-semibold text-secondary-foreground;
+  .proposal-report-meta-item {
+    @apply inline-flex min-w-0 items-center gap-2 whitespace-nowrap text-[0.9rem] font-medium leading-none text-slate-500;
+  }
+
+  .proposal-report-meta-text {
+    @apply min-w-0 truncate;
+  }
+
+  .proposal-report-icon {
+    @apply h-4 w-4 shrink-0 text-slate-600;
+    stroke-width: 1.9;
+  }
+
+  .proposal-report-divider {
+    @apply my-4 h-px bg-slate-200/90;
+  }
+
+  .proposal-report-header-divider {
+    @apply mb-4 mt-3.5;
+  }
+
+  .proposal-report-footer-divider {
+    @apply mb-2.5 mt-3.5;
   }
 
   .proposal-missing-chip {
-    @apply inline-flex items-center whitespace-nowrap rounded-[0.3rem] border border-warning/45 bg-warning/10 px-1.5 py-0.5 text-[0.76rem] font-semibold leading-none text-foreground;
+    @apply inline-flex items-center whitespace-nowrap rounded-[0.28rem] border border-warning/35 bg-warning/10 px-2 py-1 text-[0.76rem] font-semibold leading-none text-slate-800;
+  }
+
+  .proposal-report-body {
+    @apply flex flex-1 flex-col;
+  }
+
+  .proposal-report-info-row {
+    @apply flex flex-wrap items-center gap-x-8 gap-y-3;
+  }
+
+  .proposal-report-detail {
+    @apply flex min-w-0 items-center gap-2.5 text-[0.9rem] leading-none;
+  }
+
+  .proposal-report-label {
+    @apply shrink-0 font-medium text-slate-500;
+  }
+
+  .proposal-report-value {
+    @apply min-w-0 font-extrabold text-slate-800;
+  }
+
+  .proposal-report-role .proposal-report-value {
+    @apply truncate;
   }
 
   .proposal-report-metric {
-    @apply space-y-0.5;
+    @apply whitespace-nowrap;
   }
 
-  .proposal-report-metric-line {
-    @apply inline-flex items-center gap-1.5 whitespace-nowrap;
+  .proposal-report-motives {
+    @apply mt-5 grid gap-2.5;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .proposal-report-metric-label {
-    @apply inline-flex items-center gap-1 whitespace-nowrap text-[0.84rem] font-medium text-foreground;
-  }
-
-  .proposal-report-metric-value {
-    @apply whitespace-nowrap text-[1.05rem] font-bold tracking-tight text-foreground;
+  .proposal-report-motives-label {
+    @apply flex items-center gap-2 text-[0.9rem] font-medium leading-none text-slate-500;
   }
 
   .proposal-report-tags {
-    @apply flex flex-wrap gap-1 border-t border-border/60 px-3 py-2 sm:px-3.5;
+    @apply flex flex-wrap gap-x-1.5 gap-y-2;
   }
 
   .proposal-report-tag {
-    @apply inline-flex items-center gap-1 rounded-[0.3rem] border border-primary/20 bg-primary px-1.5 py-0.5 text-[0.76rem] font-medium leading-none text-white;
+    @apply inline-flex max-w-full items-center rounded-[0.3rem] bg-slate-100 px-2.5 py-1 text-[0.8rem] font-medium leading-none text-slate-500;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .proposal-report-footer {
-    @apply flex items-center gap-2 border-t border-border/60 bg-muted/35 px-3 py-1.5 sm:px-3.5;
+    @apply flex min-h-8 items-center gap-2;
   }
 
   .proposal-report-toggle {
-    @apply h-auto rounded-[0.3rem] px-0 py-0 text-[0.82rem] font-medium text-foreground hover:bg-transparent hover:text-primary;
+    @apply h-7 rounded-[0.32rem] px-0 text-[0.84rem] font-medium text-slate-500 hover:bg-transparent hover:text-slate-800;
+  }
+
+  .proposal-report-action {
+    @apply h-7 w-7 rounded-[0.32rem] text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60;
   }
 
   .proposal-report-notes {
-    @apply border-t border-border/60 px-3 py-2 sm:px-3.5;
+    @apply border-t border-slate-200/90 bg-slate-50/70 px-5 py-4 sm:px-7;
+  }
+
+  .dark .proposal-report-station,
+  .dark .proposal-report-tag {
+    @apply bg-white/10 text-slate-200;
+    box-shadow: none;
+  }
+
+  .dark .proposal-report-meta-item,
+  .dark .proposal-report-label,
+  .dark .proposal-report-motives-label,
+  .dark .proposal-report-toggle {
+    @apply text-slate-400;
+  }
+
+  .dark .proposal-report-icon,
+  .dark .proposal-report-action {
+    @apply text-slate-300;
+  }
+
+  .dark .proposal-report-value,
+  .dark .proposal-missing-chip {
+    @apply text-slate-100;
+  }
+
+  .dark .proposal-report-divider {
+    @apply bg-white/10;
+  }
+
+  .dark .proposal-report-action {
+    @apply hover:bg-white/10 hover:text-white;
+  }
+
+  .dark .proposal-report-toggle {
+    @apply hover:text-white;
+  }
+
+  .dark .proposal-report-notes {
+    @apply border-white/10 bg-white/5;
+  }
+
+  @container (min-width: 500px) {
+    .proposal-report-meta {
+      grid-template-columns: max-content minmax(0, 1fr);
+    }
+
+    .proposal-report-meta-cluster {
+      @apply justify-end;
+      column-gap: clamp(1rem, 3.2cqi, 2rem);
+    }
+
+    .proposal-report-motives {
+      grid-template-columns: max-content minmax(0, 1fr);
+    }
   }
 
   .section-eyebrow {
@@ -402,8 +544,34 @@
     @apply inline-flex items-center gap-3 rounded-[0.5rem] border border-border/70 bg-card/95 px-4 py-2 text-sm font-medium text-muted-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.32)];
   }
 
+  .deferred-render-region {
+    content-visibility: auto;
+    contain-intrinsic-size: auto none auto 24rem;
+  }
+
+  .deferred-report-region {
+    content-visibility: auto;
+    contain-intrinsic-size: auto none auto 18rem;
+  }
+
+  @supports not (content-visibility: auto) {
+    .deferred-render-region,
+    .deferred-report-region {
+      contain: layout style paint;
+    }
+  }
+
   .data-table-shell {
     @apply overflow-hidden rounded-[calc(var(--radius)+0.04rem)] border border-border/70 bg-card/95;
+  }
+
+  .data-table-scroll-hint {
+    background:
+      linear-gradient(to right, hsl(var(--card)) 30%, hsl(var(--card) / 0)) left center / 1.5rem 100% no-repeat local,
+      linear-gradient(to left, hsl(var(--card)) 30%, hsl(var(--card) / 0)) right center / 1.5rem 100% no-repeat local,
+      linear-gradient(to right, hsl(var(--foreground) / 0.16), hsl(var(--foreground) / 0)) left center / 1rem 100% no-repeat scroll,
+      linear-gradient(to left, hsl(var(--foreground) / 0.16), hsl(var(--foreground) / 0)) right center / 1rem 100% no-repeat scroll,
+      hsl(var(--card));
   }
 
   .data-table-head {
@@ -576,6 +744,7 @@
       0 22px 48px -34px rgba(45, 212, 191, 0.28),
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
+
   .header-icon-button {
     @apply h-10 w-10 border border-slate-300 bg-white text-slate-700 shadow-[0_6px_20px_-18px_rgba(15,23,42,0.22)] hover:bg-slate-100 hover:text-slate-900;
   }
@@ -650,9 +819,11 @@
     }
   }
 
-  @media (max-width: 767px) {
-    .proposal-report-top {
-      grid-template-columns: minmax(0, 1fr);
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
     }
   }
 }

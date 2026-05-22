@@ -5,6 +5,9 @@ import { normalizeNameKey } from "@/lib/normalizeName";
 
 export type ReportType = "vehiculo" | "embarcacion";
 
+const SUPABASE_PAGE_SIZE = 1000;
+const IN_FILTER_BATCH_SIZE = 100;
+
 export interface ReportPersonWithRoles {
   cedula: string | null;
   id: string;
@@ -20,6 +23,25 @@ interface PersistReportPersonInput {
   cedula?: string | null;
   roles: string[];
 }
+
+type ReportPersonRoleRow = {
+  reporte_persona_id: string;
+  rol: string;
+};
+
+type ReportPersonBaseRow = {
+  id: string;
+  nombre: string;
+};
+
+type ReportPersonRow = {
+  cedula: string | null;
+  id: string;
+  nombre: string;
+  nombre_normalizado: string | null;
+  reporte_id: string;
+  tipo_reporte: string;
+};
 
 export const normalizePersonNameKey = (raw: string) =>
   normalizeNameKey(raw);
@@ -72,14 +94,7 @@ const prepareParticipants = (participants: PersistReportPersonInput[]) => {
 };
 
 const groupPeopleRowsByReport = (
-  people: Array<{
-    cedula: string | null;
-    id: string;
-    nombre: string;
-    nombre_normalizado: string | null;
-    reporte_id: string;
-    tipo_reporte: string;
-  }>,
+  people: ReportPersonRow[],
   rolesByPerson: Map<string, string[]>,
 ) => {
   const grouped = new Map<string, Map<string, ReportPersonWithRoles>>();
@@ -113,6 +128,118 @@ const groupPeopleRowsByReport = (
   return new Map(
     Array.from(grouped.entries()).map(([reportId, byName]) => [reportId, Array.from(byName.values())]),
   );
+};
+
+const chunkArray = <T,>(values: T[], size: number) => {
+  const chunks: T[][] = [];
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+  return chunks;
+};
+
+const loadRolesByPersonIds = async (personIds: string[]) => {
+  const rolesByPerson = new Map<string, string[]>();
+
+  for (const personIdBatch of chunkArray(Array.from(new Set(personIds)), IN_FILTER_BATCH_SIZE)) {
+    if (personIdBatch.length === 0) continue;
+
+    const { data: roles, error: rolesError } = await supabase
+      .from("reporte_persona_roles")
+      .select("reporte_persona_id, rol")
+      .in("reporte_persona_id", personIdBatch);
+
+    if (rolesError) {
+      throw rolesError;
+    }
+
+    ((roles || []) as ReportPersonRoleRow[]).forEach((role) => {
+      const current = rolesByPerson.get(role.reporte_persona_id) ?? [];
+      current.push(role.rol);
+      rolesByPerson.set(role.reporte_persona_id, current);
+    });
+  }
+
+  return rolesByPerson;
+};
+
+const loadPeopleNameRows = async (tipoReporte?: ReportType) => {
+  const allPeople: ReportPersonBaseRow[] = [];
+
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    let query = supabase
+      .from("reporte_personas")
+      .select("id, nombre")
+      .order("nombre", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
+
+    if (tipoReporte) {
+      query = query.eq("tipo_reporte", tipoReporte);
+    }
+
+    const { data: people, error: peopleError } = await query;
+    if (peopleError) {
+      throw peopleError;
+    }
+
+    const page = (people || []) as ReportPersonBaseRow[];
+    allPeople.push(...page);
+
+    if (page.length < SUPABASE_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return allPeople;
+};
+
+const loadReportPersonRowsPage = async (
+  tipoReporte: ReportType,
+  from: number,
+  reportIds?: string[],
+) => {
+  let query = supabase
+    .from("reporte_personas")
+    .select("id, reporte_id, tipo_reporte, nombre, nombre_normalizado, cedula")
+    .eq("tipo_reporte", tipoReporte)
+    .order("reporte_id", { ascending: true })
+    .order("id", { ascending: true })
+    .range(from, from + SUPABASE_PAGE_SIZE - 1);
+
+  if (reportIds && reportIds.length > 0) {
+    query = query.in("reporte_id", reportIds);
+  }
+
+  const { data: people, error: peopleError } = await query;
+  if (peopleError) {
+    throw peopleError;
+  }
+
+  return (people || []) as ReportPersonRow[];
+};
+
+const loadReportPersonRows = async (
+  tipoReporte: ReportType,
+  reportIds?: string[],
+) => {
+  const allPeople: ReportPersonRow[] = [];
+  const reportIdBatches = reportIds && reportIds.length > 0
+    ? chunkArray(Array.from(new Set(reportIds)), IN_FILTER_BATCH_SIZE)
+    : [undefined];
+
+  for (const reportIdBatch of reportIdBatches) {
+    for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+      const page = await loadReportPersonRowsPage(tipoReporte, from, reportIdBatch);
+      allPeople.push(...page);
+
+      if (page.length < SUPABASE_PAGE_SIZE) {
+        break;
+      }
+    }
+  }
+
+  return allPeople;
 };
 
 export const replaceReportPeople = async (
@@ -210,36 +337,13 @@ export const loadReportPeopleByIds = async (
     return new Map<string, ReportPersonWithRoles[]>();
   }
 
-  const { data: people, error: peopleError } = await supabase
-    .from("reporte_personas")
-    .select("id, reporte_id, tipo_reporte, nombre, nombre_normalizado, cedula")
-    .eq("tipo_reporte", tipoReporte)
-    .in("reporte_id", reportIds);
-
-  if (peopleError) {
-    throw peopleError;
-  }
-
-  if (!people || people.length === 0) {
+  const people = await loadReportPersonRows(tipoReporte, reportIds);
+  if (people.length === 0) {
     return new Map<string, ReportPersonWithRoles[]>();
   }
 
   const personIds = people.map((person) => person.id);
-  const { data: roles, error: rolesError } = await supabase
-    .from("reporte_persona_roles")
-    .select("reporte_persona_id, rol")
-    .in("reporte_persona_id", personIds);
-
-  if (rolesError) {
-    throw rolesError;
-  }
-
-  const rolesByPerson = new Map<string, string[]>();
-  (roles || []).forEach((role) => {
-    const current = rolesByPerson.get(role.reporte_persona_id) ?? [];
-    current.push(role.rol);
-    rolesByPerson.set(role.reporte_persona_id, current);
-  });
+  const rolesByPerson = await loadRolesByPersonIds(personIds);
 
   return groupPeopleRowsByReport(people, rolesByPerson);
 };
@@ -248,38 +352,15 @@ export const loadPeopleNameOptions = async (
   excludedRoles: string[] = [],
   tipoReporte?: ReportType,
 ) => {
-  let query = supabase.from("reporte_personas").select("id, nombre");
-  if (tipoReporte) {
-    query = query.eq("tipo_reporte", tipoReporte);
-  }
-
-  const { data: people, error: peopleError } = await query;
-  if (peopleError) {
-    throw peopleError;
-  }
-
-  if (!people || people.length === 0) {
+  const people = await loadPeopleNameRows(tipoReporte);
+  if (people.length === 0) {
     return [];
   }
 
   const personIds = people.map((person) => person.id);
-  const { data: roles, error: rolesError } = await supabase
-    .from("reporte_persona_roles")
-    .select("reporte_persona_id, rol")
-    .in("reporte_persona_id", personIds);
-
-  if (rolesError) {
-    throw rolesError;
-  }
-
   const excluded = new Set(excludedRoles);
   const allowedNames = new Map<string, string>();
-  const rolesByPerson = new Map<string, string[]>();
-  (roles || []).forEach((role) => {
-    const current = rolesByPerson.get(role.reporte_persona_id) ?? [];
-    current.push(role.rol);
-    rolesByPerson.set(role.reporte_persona_id, current);
-  });
+  const rolesByPerson = await loadRolesByPersonIds(personIds);
 
   people.forEach((person) => {
     const personRoles = rolesByPerson.get(person.id) ?? [];
@@ -295,6 +376,9 @@ export const loadPeopleNameOptions = async (
   return Array.from(allowedNames.values()).sort((a, b) => a.localeCompare(b));
 };
 
+export const loadProposalPeopleNameOptions = () =>
+  loadPeopleNameOptions(["particular", "persona_particular"]);
+
 export const searchPersonParticipations = async (
   personName: string,
   tipoReporte: ReportType,
@@ -303,21 +387,8 @@ export const searchPersonParticipations = async (
   const searchKey = normalizePersonNameKey(normalizeKnownPersonName(personName));
   if (!searchKey) return [];
 
-  let query = supabase
-    .from("reporte_personas")
-    .select("id, reporte_id, tipo_reporte, nombre, nombre_normalizado, cedula")
-    .eq("tipo_reporte", tipoReporte);
-
-  if (reportIds && reportIds.length > 0) {
-    query = query.in("reporte_id", reportIds);
-  }
-
-  const { data: people, error: peopleError } = await query;
-  if (peopleError) {
-    throw peopleError;
-  }
-
-  if (!people || people.length === 0) {
+  const people = await loadReportPersonRows(tipoReporte, reportIds);
+  if (people.length === 0) {
     return [];
   }
 
@@ -331,21 +402,7 @@ export const searchPersonParticipations = async (
   }
 
   const ids = filteredPeople.map((person) => person.id);
-  const { data: roles, error: rolesError } = await supabase
-    .from("reporte_persona_roles")
-    .select("reporte_persona_id, rol")
-    .in("reporte_persona_id", ids);
-
-  if (rolesError) {
-    throw rolesError;
-  }
-
-  const rolesByPerson = new Map<string, string[]>();
-  (roles || []).forEach((role) => {
-    const current = rolesByPerson.get(role.reporte_persona_id) ?? [];
-    current.push(role.rol);
-    rolesByPerson.set(role.reporte_persona_id, current);
-  });
+  const rolesByPerson = await loadRolesByPersonIds(ids);
 
   return Array.from(groupPeopleRowsByReport(filteredPeople, rolesByPerson).values()).flat();
 };

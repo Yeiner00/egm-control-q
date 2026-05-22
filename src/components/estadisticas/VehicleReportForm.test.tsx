@@ -232,6 +232,21 @@ describe("VehicleReportForm", () => {
     expect(getCommandItem("Elena Castro")).not.toHaveAttribute("data-disabled", "true");
   });
 
+  it("removes only the clicked acompanante when the chofer is already listed", () => {
+    renderVehicleForm({
+      ...baseData,
+      chofer: "Carlos Soto",
+      acompanantes: ["Carlos Soto", "Ana Mora", "Bruno Vega"],
+    });
+
+    fireEvent.click(screen.getByLabelText("Quitar Ana Mora"));
+
+    expect(screen.getByRole("button", { name: /2 acompanantes seleccionados/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Quitar Carlos Soto")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Quitar Ana Mora")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Quitar Bruno Vega")).toBeInTheDocument();
+  });
+
   it("removes the chofer from acompanantes when the chofer changes", () => {
     renderVehicleForm({
       ...baseData,

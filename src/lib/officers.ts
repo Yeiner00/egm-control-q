@@ -34,16 +34,27 @@ export const OFFICER_OPTIONS = OFFICERS.map((officer) => officer.nombre);
 const normalizeOfficerKey = normalizeNameKey;
 
 const KNOWN_PERSON_ALIASES = new Map<string, string>([
+  ["alfonso", "Alfonso Noguera Corrales"],
+  ["brayan obando munoz", "Bryan Obando Munoz"],
+  ["brayan obando quiros", "Bryan Obando Munoz"],
+  ["bryan obando quiros", "Bryan Obando Munoz"],
   ["jprge gonzales barrantes", "Jorge Gonzalez Barrantes"],
   ["jprge gonzalez barrantes", "Jorge Gonzalez Barrantes"],
+  ["luis c jarquin gonzales", "Luis Carlos Gonzalez Jarquin"],
+  ["luis c jarquin gonzalez", "Luis Carlos Gonzalez Jarquin"],
   ["luis gonzales jarquin", "Luis Carlos Gonzalez Jarquin"],
   ["luis gonzalez jarquin", "Luis Carlos Gonzalez Jarquin"],
+  ["micchael rojas brenes", "Michael Rojas Brenes"],
   ["obed vasques chavez", "Obed Vasquez Chaves"],
   ["obed vasques chaves", "Obed Vasquez Chaves"],
   ["obed vasquez chavez", "Obed Vasquez Chaves"],
   ["obed vazquez chavez", "Obed Vasquez Chaves"],
   ["obed vazquez chaves", "Obed Vasquez Chaves"],
   ["randall mena villavicencion", "Randall Mena Villavicencio"],
+  ["yeiner castro alvares", "Yeiner Castro Alvarez"],
+  ["yeiner castro anlvares", "Yeiner Castro Alvarez"],
+  ["yeiner cstro alvares", "Yeiner Castro Alvarez"],
+  ["yeiner cstro anlvares", "Yeiner Castro Alvarez"],
 ]);
 
 const getNameTokens = (value: string) => normalizeOfficerKey(value).split(" ").filter(Boolean);

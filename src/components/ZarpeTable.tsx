@@ -306,7 +306,7 @@ const ZarpeTable = ({ refreshKey, onDeleted }: Props) => {
             )}
           </div>
         </div>
-        <div className="data-table-shell overflow-x-auto lg:overflow-x-visible">
+        <div className="data-table-shell data-table-scroll-hint overflow-x-auto lg:overflow-x-visible">
           <table className="w-full text-sm">
             <thead className="data-table-head">
               <tr>
@@ -339,6 +339,7 @@ const ZarpeTable = ({ refreshKey, onDeleted }: Props) => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 rounded-[0.42rem] text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={`Eliminar zarpe ${z.zarpe_folio || z.nombre_embarcacion || "seleccionado"}`}
                       onClick={() => setDeleteTarget(z)}
                     >
                       <Trash2 className="h-4 w-4" />

@@ -1,5 +1,5 @@
 const RANK_TOKEN =
-  "(?:s\\s*\\.?\\s*\\/?\\s*int(?:endente)?|sint|sub\\s*[-.]?\\s*int(?:endente)?|subintendente|sub\\s+oficial|suboficial|ag(?:ente|t|te)?|inspector|comandante|cmdt|cmdte|cmte|intendente|comisario|director|oficial|capitan|cap)";
+  "(?:s\\s*\\.?\\s*\\/?\\s*int(?:endente)?|sint|sub\\s*[-.]?\\s*int(?:endente)?|subintendente|sub\\s+oficial|suboficial|ag(?:ente|t|te)?|insp?|inspector|comandante|cmdt|cmdte|cmte|intendente|comisario|director|oficial|capitan|cap)";
 
 const RANK_PREFIX_REGEX = new RegExp(`^${RANK_TOKEN}\\.?\\s+`, "i");
 const MID_RANK_REGEX = new RegExp(`\\s+(?=${RANK_TOKEN}\\.?\\s+)`, "gi");

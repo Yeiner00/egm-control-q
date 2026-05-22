@@ -22,7 +22,13 @@ describe("officers", () => {
     expect(findOfficerByName("S Int Jorge Gonzales Barrantes")?.nombre).toBe("Jorge Gonzalez Barrantes");
     expect(findOfficerByName("Jprge Gonzales Barrantes")?.nombre).toBe("Jorge Gonzalez Barrantes");
     expect(findOfficerByName("Cmdt. Cesar Alvares Martinez")?.nombre).toBe("Cesar Alvarez Martinez");
+    expect(findOfficerByName("Alfonso")?.nombre).toBe("Alfonso Noguera Corrales");
     expect(findOfficerByName("Luis Gonzales Jarquin")?.nombre).toBe("Luis Carlos Gonzalez Jarquin");
+    expect(findOfficerByName("Luis C. Jarquin Gonzalez")?.nombre).toBe("Luis Carlos Gonzalez Jarquin");
+    expect(findOfficerByName("Micchael Rojas Brenes")?.nombre).toBe("Michael Rojas Brenes");
+    expect(findOfficerByName("Insp. Minor Cambronero Campos")?.nombre).toBe("Minor Cambronero Campos");
+    expect(findOfficerByName("Brayan Obando Quiros")?.nombre).toBe("Bryan Obando Munoz");
+    expect(findOfficerByName("Yeiner Cstro Anlvares")?.nombre).toBe("Yeiner Castro Alvarez");
     expect(findOfficerByName("Obed Vasques Chavez")?.nombre).toBe("Obed Vasquez Chaves");
     expect(findOfficerByName("Obed Vazquez Chavez")?.nombre).toBe("Obed Vasquez Chaves");
     expect(findOfficerByName("Randall Mena Villavicencion")?.nombre).toBe("Randall Mena Villavicencio");

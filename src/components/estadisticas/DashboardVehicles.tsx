@@ -32,7 +32,7 @@ import {
   buildProposalTotalsGroups,
 } from "@/lib/proposalTotals";
 import {
-  loadPeopleNameOptions,
+  loadProposalPeopleNameOptions,
   searchPersonParticipations,
 } from "@/lib/reportPeople";
 import { countVehicleMotiveReports } from "@/lib/motives";
@@ -58,7 +58,6 @@ const MONTHS = [
   "Noviembre",
   "Diciembre",
 ];
-const NAME_FILTER_EXCLUDED_ROLES = ["particular", "persona_particular"];
 const GENERIC_ROLES = ["acompanante", "acompañante"];
 
 type VehicleReport = Tables<"reportes_vehiculo">;
@@ -90,7 +89,7 @@ const DashboardVehicles = ({ onEditReport }: DashboardVehiclesProps) => {
   useEffect(() => {
     const loadNames = async () => {
       try {
-        const names = await loadPeopleNameOptions(NAME_FILTER_EXCLUDED_ROLES, "vehiculo");
+        const names = await loadProposalPeopleNameOptions();
         setPersonNames(names);
       } catch (error) {
         setPersonNames([]);

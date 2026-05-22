@@ -14,7 +14,8 @@ const ROLE_LABELS: Record<string, string> = {
   chofer: "Chofer",
   encargado_mision: "Jefe de mision",
   jefe_mision: "Jefe de mision",
-  oficial: "Oficial",
+  oficial: "Operacional",
+  operacional: "Operacional",
   sub_oficial: "Sub oficial",
   suboficial: "Sub oficial",
 };
@@ -96,6 +97,8 @@ export const buildProposalRoleSummaries = <T>(
       ),
     );
 
+    const uniqueLabels = new Set<string>();
+
     uniqueRoles.forEach((rawRole) => {
       const normalizedRole = normalizeRoleKey(rawRole);
       if (!normalizedRole || excluded.has(normalizedRole)) {
@@ -103,6 +106,10 @@ export const buildProposalRoleSummaries = <T>(
       }
 
       const label = formatProposalRoleLabel(rawRole);
+      uniqueLabels.add(label);
+    });
+
+    uniqueLabels.forEach((label) => {
       const existing = grouped.get(label);
 
       if (existing) {

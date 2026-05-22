@@ -1,5 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { Clock3, Eye, EyeOff, FileSpreadsheet, MapPinned, Pencil, Tag, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  CarFront,
+  Clock3,
+  Eye,
+  EyeOff,
+  FileSpreadsheet,
+  FileText,
+  Pencil,
+  Route,
+  Ship,
+  Tag,
+  UserRound,
+} from "lucide-react";
 import { isEmptyReportValue } from "@/lib/missingData";
 
 interface ProposalMetric {
@@ -27,6 +40,12 @@ const MissingChip = () => <span className="proposal-missing-chip">Sin dato</span
 
 const ValueOrMissing = ({ value }: { value: string | number | null | undefined }) =>
   isEmptyReportValue(value) ? <MissingChip /> : <>{value}</>;
+
+const normalizeMetricLabel = (label: string) =>
+  label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 const formatNovedades = (value: unknown): string => {
   if (isEmptyReportValue(value)) return "";
@@ -63,98 +82,118 @@ const ProposalReportCard = ({
   printing = false,
 }: ProposalReportCardProps) => {
   const novedadesText = formatNovedades(novedades);
+  const isBoatReport = metrics.some((metric) => {
+    const label = normalizeMetricLabel(metric.label);
+    return label.includes("milla") || label.includes("nav");
+  });
+  const UnitIcon = isBoatReport ? Ship : CarFront;
 
   return (
     <article className="proposal-report-card">
-      <div className="proposal-report-top">
-        <div className="space-y-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h5 className="proposal-report-date"><ValueOrMissing value={date} /></h5>
-            <span className="proposal-report-pill">
-              Viaje: {isEmptyReportValue(reportNumber) ? <MissingChip /> : `#${reportNumber}`}
+      <div className="proposal-report-main">
+        <div className="proposal-report-meta">
+          <span className="proposal-report-station">
+            <ValueOrMissing value={secondaryLabel} />
+          </span>
+          <div className="proposal-report-meta-cluster">
+            <span className="proposal-report-meta-item">
+              <CalendarDays className="proposal-report-icon" />
+              <span className="proposal-report-meta-text"><ValueOrMissing value={date} /></span>
             </span>
-          </div>
-          <div className="proposal-report-role">
-            <UserRound className="h-3.5 w-3.5" />
-            <span>Rol: </span>
-            <ValueOrMissing value={role} />
+            <span className="proposal-report-meta-item">
+              <FileText className="proposal-report-icon" />
+              <span className="proposal-report-meta-text">
+                {isEmptyReportValue(reportNumber) ? <MissingChip /> : `#${reportNumber}`}
+              </span>
+            </span>
+            <span className="proposal-report-meta-item">
+              <UnitIcon className="proposal-report-icon" />
+              <span className="proposal-report-meta-text"><ValueOrMissing value={unit} /></span>
+            </span>
           </div>
         </div>
 
-        <div className="space-y-2.5 text-left lg:text-right">
-          <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-            <h6 className="proposal-report-unit"><ValueOrMissing value={unit} /></h6>
-            <span className="proposal-report-chip-soft"><ValueOrMissing value={secondaryLabel} /></span>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {metrics.map((metric) => (
-              <div key={metric.label} className="proposal-report-metric">
-                <div className="proposal-report-metric-line">
-                  <span className="proposal-report-metric-label">
-                    {metric.label === "Millas" || metric.label === "Kilometros" ? (
-                      <MapPinned className="h-3.5 w-3.5" />
-                    ) : (
-                      <Clock3 className="h-3.5 w-3.5" />
-                    )}
-                    {metric.label}:
-                  </span>
-                  <span className="proposal-report-metric-value"><ValueOrMissing value={metric.value} /></span>
+        <div className="proposal-report-divider proposal-report-header-divider" />
+
+        <div className="proposal-report-body">
+          <div className="proposal-report-info-row">
+            <div className="proposal-report-detail proposal-report-role">
+              <UserRound className="proposal-report-icon" />
+              <span className="proposal-report-label">Rol</span>
+              <span className="proposal-report-value"><ValueOrMissing value={role} /></span>
+            </div>
+            {metrics.map((metric) => {
+              const label = normalizeMetricLabel(metric.label);
+              const MetricIcon = label.includes("kilometro") || label.includes("milla") ? Route : Clock3;
+
+              return (
+                <div key={metric.label} className="proposal-report-detail proposal-report-metric">
+                  <MetricIcon className="proposal-report-icon" />
+                  <span className="proposal-report-label">{metric.label}</span>
+                  <span className="proposal-report-value"><ValueOrMissing value={metric.value} /></span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          <div className="proposal-report-motives">
+            <div className="proposal-report-motives-label">
+              <Tag className="proposal-report-icon" />
+              <span>Motivos</span>
+            </div>
+            <div className="proposal-report-tags">
+              {tags.length > 0 ? (
+                tags.map((tag, index) => (
+                  <span key={`${tag}-${index}`} className="proposal-report-tag">
+                    {tag}
+                  </span>
+                ))
+              ) : (
+                <MissingChip />
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="proposal-report-tags">
-        {tags.length > 0 ? (
-          tags.map((tag, index) => (
-            <span key={`${tag}-${index}`} className="proposal-report-tag">
-              <Tag className="h-3 w-3" />
-              {tag}
-            </span>
-          ))
-        ) : (
-          <MissingChip />
-        )}
-      </div>
+        <div className="proposal-report-divider proposal-report-footer-divider" />
 
-      <div className="proposal-report-footer">
-        <Button variant="ghost" size="sm" className="proposal-report-toggle" onClick={onToggleNovedades}>
-          {expanded ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          {expanded ? "Ocultar novedades" : "Ver novedades"}
-        </Button>
-        {(onPrint || onEdit) && (
-          <div className="ml-auto flex items-center gap-1">
-            {onPrint && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary"
-                onClick={onPrint}
-                disabled={printing}
-                aria-label="Imprimir reporte"
-                title="Imprimir reporte"
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {onEdit && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary"
-                onClick={onEdit}
-                aria-label="Editar reporte"
-                title="Editar reporte"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="proposal-report-footer">
+          <Button variant="ghost" size="sm" className="proposal-report-toggle" onClick={onToggleNovedades}>
+            {expanded ? <EyeOff className="proposal-report-icon" /> : <Eye className="proposal-report-icon" />}
+            {expanded ? "Ocultar novedades" : "Ver novedades"}
+          </Button>
+          {(onPrint || onEdit) && (
+            <div className="ml-auto flex items-center gap-2">
+              {onPrint && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="proposal-report-action"
+                  onClick={onPrint}
+                  disabled={printing}
+                  aria-label="Imprimir reporte"
+                  title="Imprimir reporte"
+                >
+                  <FileSpreadsheet className="proposal-report-icon" />
+                </Button>
+              )}
+              {onEdit && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="proposal-report-action"
+                  onClick={onEdit}
+                  aria-label="Editar reporte"
+                  title="Editar reporte"
+                >
+                  <Pencil className="proposal-report-icon" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {expanded && (

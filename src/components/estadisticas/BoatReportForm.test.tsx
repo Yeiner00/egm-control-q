@@ -287,7 +287,7 @@ describe("BoatReportForm", () => {
     expect(getCommandItem("Emergencia")).toHaveAttribute("data-disabled", "true");
   });
 
-  it("selects up to six tripulantes, blocks capitan and encargado, autofills cedulas, and keeps them editable", () => {
+  it("selects tripulantes without a cap, blocks capitan and encargado, and hides cedula fields", () => {
     renderBoatForm({
       data: {
         ...baseData,
@@ -310,20 +310,42 @@ describe("BoatReportForm", () => {
       "Sergio Alpizar Carrillo",
       "Pablo Barrantes Palma",
       "Minor Cambronero Campos",
+      "Jhonny Araya Chacon",
     ].forEach((name) => {
       fireEvent.click(getCommandItem(name));
     });
 
-    expect(screen.getByRole("button", { name: /6 tripulantes seleccionados/i })).toBeInTheDocument();
-    expect(screen.getByText("Maximo 6 tripulantes seleccionados.")).toBeInTheDocument();
-    expect(getCommandItem("Jhonny Araya Chacon")).toHaveAttribute("data-disabled", "true");
-
-    const tripulanteCedula = screen.getByDisplayValue("503950054");
-    fireEvent.change(tripulanteCedula, { target: { value: "503950055" } });
-    expect(screen.getByDisplayValue("503950055")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /7 tripulantes seleccionados/i })).toBeInTheDocument();
+    expect(screen.queryByText("Maximo 6 tripulantes seleccionados.")).not.toBeInTheDocument();
+    expect(getCommandItem("Dara Chavarria Hernandez")).not.toHaveAttribute("data-disabled", "true");
+    expect(screen.queryByPlaceholderText("Cedula")).not.toBeInTheDocument();
   }, 10000);
 
-  it("places operacional after tripulantes and fills crew cedulas from known officers", () => {
+  it("removes only the clicked tripulante when blocked role names are already listed", () => {
+    renderBoatForm({
+      data: {
+        ...baseData,
+        capitan: "Jorge Gonzalez Barrantes",
+        encargado_mision: "Minor Cambronero Campos",
+        tripulantes: [
+          { nombre: "Brayan Obando Quiros", cedula: "" },
+          { nombre: "Jorge Gonzalez Barrantes", cedula: "603100467" },
+          { nombre: "Minor Cambronero Campos", cedula: "603460878" },
+          { nombre: "Yeiner Castro Alvarez", cedula: "" },
+        ],
+      },
+    });
+
+    fireEvent.click(screen.getByLabelText("Quitar Brayan Obando Quiros"));
+
+    expect(screen.getByRole("button", { name: /3 tripulantes seleccionados/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Quitar Brayan Obando Quiros")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Quitar Jorge Gonzalez Barrantes")).toBeInTheDocument();
+    expect(screen.getByLabelText("Quitar Minor Cambronero Campos")).toBeInTheDocument();
+    expect(screen.getByLabelText("Quitar Yeiner Castro Alvarez")).toBeInTheDocument();
+  });
+
+  it("places operacional after tripulantes and fills assigned role cedulas from known officers", () => {
     renderBoatForm();
 
     const tripulantes = screen.getByText("Tripulantes");
