@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { normalizeName } from "@/lib/normalizeName";
-import { calcTotalHours, mapToBoatFormData, mapToVehicleFormData, type ExtractedReportData } from "@/lib/report-utils";
-import { normalizeReportNumber, normalizeReportUnit } from "@/lib/reportNumber";
-import { countUniqueNormalizedNames, loadPeopleNameOptions, replaceReportPeople } from "@/lib/reportPeople";
-import { buildLegacyReportMotiveRows, buildReportMotiveRows, loadMotiveOptions } from "@/lib/motives";
+import { mapToBoatFormData, mapToVehicleFormData, type ExtractedReportData } from "@/lib/report-utils";
+import { loadPeopleNameOptions } from "@/lib/reportPeople";
+import { loadMotiveOptions } from "@/lib/motives";
+import { createBoatReport, createVehicleReport, type SaveReportResult } from "@/lib/reportPersistence";
 import { downloadReportExcel } from "@/lib/reportExcelExport";
-import { loadSiteOptions, type ReportSiteOption } from "@/lib/reportSites";
+import { DEFAULT_REPORT_SITE_OPTIONS, loadSiteOptions, type ReportSiteOption } from "@/lib/reportSites";
 import { isEmptyReportValue } from "@/lib/missingData";
 import { findOfficerByName, mergeOfficerOptions } from "@/lib/officers";
 import { getErrorMessage } from "@/lib/errorMessage";
@@ -36,10 +35,6 @@ type ReportType = "vehiculo" | "embarcacion";
 type ReportesSubtab = "manual" | "subir" | "gestionar" | "exportar";
 type ReportEditTarget = { tipo: ReportType; reportId: string };
 type SubtabRequest<T extends string> = { value: T; nonce: number; editTarget?: ReportEditTarget };
-type SaveReportResult = {
-  reportId?: string;
-  error?: string;
-};
 
 const MANUAL_STATIONS = ["Murcielago"];
 const DEFAULT_MANUAL_STATION = MANUAL_STATIONS[0];
@@ -63,7 +58,8 @@ const emptyBoat: BoatFormData = {
   no_cierre_os: "", hora_salida: "", hora_regreso: "",
   horas_motor_babor: null, horas_motor_centro: null, horas_motor_estribor: null,
   destino: "", motivos: [], capitan: "", encargado_mision: "",
-  capitan_cedula: "", encargado_mision_cedula: "", operacional: "", operacional_cedula: "",
+  capitan_cedula: "", encargado_mision_cedula: "", oficial_director: "", oficial_director_cedula: "",
+  operacional: "", operacional_cedula: "",
   tripulantes: [], personas_particulares: [], sitios_visitados: [], embarcaciones_inspeccionadas: [],
   saldo_anterior: null, combustible_trasegado_bodega: null,
   total_antes_viaje: null, combustible_trasegado_durante: null,
@@ -121,6 +117,9 @@ const addMissingList = (missing: string[], label: string, items: unknown[]) => {
   }
 };
 
+const uniqueUnitOptions = (values: Array<string | null | undefined>) =>
+  [...new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])].sort();
+
 const getVehicleManualMissingFields = (data: VehicleFormData, fuelLoadEnabled: boolean) => {
   const missing: string[] = [];
   addMissing(missing, "N. Reporte", data.no_reporte);
@@ -175,6 +174,8 @@ const getBoatManualMissingFields = (data: BoatFormData, fuelLoadEnabled: boolean
   addMissing(missing, "Cedula Capitan", data.capitan_cedula);
   addMissing(missing, "Encargado de Mision", data.encargado_mision);
   addMissing(missing, "Cedula Encargado", data.encargado_mision_cedula);
+  addMissing(missing, "Oficial Director / Ambiental", data.oficial_director);
+  addMissing(missing, "Cedula Oficial Director", data.oficial_director_cedula);
   addMissing(missing, "Operacional", data.operacional);
   addMissing(missing, "Cedula Operacional", data.operacional_cedula);
   addMissingList(missing, "Tripulantes", data.tripulantes);
@@ -201,11 +202,6 @@ const getBoatManualMissingFields = (data: BoatFormData, fuelLoadEnabled: boolean
   return missing;
 };
 
-const isMotivesSchemaError = (message: string) =>
-  message.includes("motivo_original") ||
-  message.includes("motivo_key") ||
-  message.includes("Could not find");
-
 interface ReportesTabProps {
   subtabRequest?: SubtabRequest<ReportesSubtab> | null;
   onSubtabRequestConsumed?: (nonce: number) => void;
@@ -223,9 +219,11 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
   const [manualVehicleData, setManualVehicleData] = useState<VehicleFormData>(buildManualVehicleDefaults);
   const [manualBoatData, setManualBoatData] = useState<BoatFormData>(buildManualBoatDefaults);
   const [manualUnitOptions, setManualUnitOptions] = useState<string[]>([]);
-  const [manualPeopleOptions, setManualPeopleOptions] = useState<string[]>([]);
+  const [vehicleUnitOptions, setVehicleUnitOptions] = useState<string[]>([]);
+  const [boatUnitOptions, setBoatUnitOptions] = useState<string[]>([]);
+  const [manualPeopleOptions, setManualPeopleOptions] = useState<string[]>(() => mergeOfficerOptions([]));
   const [motiveOptions, setMotiveOptions] = useState<string[]>([]);
-  const [siteOptions, setSiteOptions] = useState<ReportSiteOption[]>([]);
+  const [siteOptions, setSiteOptions] = useState<ReportSiteOption[]>(DEFAULT_REPORT_SITE_OPTIONS);
   const [manualSaving, setManualSaving] = useState(false);
   const [manualGenerating, setManualGenerating] = useState(false);
   const [manualSavedReport, setManualSavedReport] = useState<{ tipo: ReportType; reportId: string } | null>(null);
@@ -235,6 +233,46 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
   const [manualVehicleFuelLoadEnabled, setManualVehicleFuelLoadEnabled] = useState(false);
   const [manualBoatFuelLoadEnabled, setManualBoatFuelLoadEnabled] = useState(false);
   const optionType = showForm && reportType ? reportType : manualType;
+
+  useEffect(() => {
+    let active = true;
+
+    const loadCommonOptions = async () => {
+      const [vehicleUnits, boatUnits, peopleOptions, loadedMotiveOptions, loadedSiteOptions] = await Promise.all([
+        supabase.from("reportes_vehiculo").select("vehiculo"),
+        supabase.from("reportes_embarcacion").select("embarcacion"),
+        loadPeopleNameOptions(["particular", "persona_particular"]),
+        loadMotiveOptions(),
+        loadSiteOptions(),
+      ]);
+
+      if (vehicleUnits.error) throw vehicleUnits.error;
+      if (boatUnits.error) throw boatUnits.error;
+      if (!active) return;
+
+      setVehicleUnitOptions(uniqueUnitOptions((vehicleUnits.data || []).map((row) => row.vehiculo)));
+      setBoatUnitOptions(uniqueUnitOptions((boatUnits.data || []).map((row) => row.embarcacion)));
+      setManualPeopleOptions(mergeOfficerOptions(peopleOptions));
+      setMotiveOptions(loadedMotiveOptions);
+      setSiteOptions(loadedSiteOptions);
+    };
+
+    loadCommonOptions().catch((error) => {
+      if (!active) return;
+      setVehicleUnitOptions([]);
+      setBoatUnitOptions([]);
+      setManualPeopleOptions(mergeOfficerOptions([]));
+      setMotiveOptions([]);
+      setSiteOptions(DEFAULT_REPORT_SITE_OPTIONS);
+      toast.error("No se pudieron cargar las listas base", {
+        description: getErrorMessage(error),
+      });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!subtabRequest) return;
@@ -271,11 +309,11 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
       if (optionType === "vehiculo") {
         const { data, error } = await supabase.from("reportes_vehiculo").select("vehiculo");
         if (error) throw error;
-        unitOptions = [...new Set((data || []).map((row) => row.vehiculo?.trim()).filter(Boolean) as string[])].sort();
+        unitOptions = uniqueUnitOptions((data || []).map((row) => row.vehiculo));
       } else {
         const { data, error } = await supabase.from("reportes_embarcacion").select("embarcacion");
         if (error) throw error;
-        unitOptions = [...new Set((data || []).map((row) => row.embarcacion?.trim()).filter(Boolean) as string[])].sort();
+        unitOptions = uniqueUnitOptions((data || []).map((row) => row.embarcacion));
       }
 
       const [peopleOptions, loadedMotiveOptions, loadedSiteOptions] = await Promise.all([
@@ -296,7 +334,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
       setManualUnitOptions([]);
       setManualPeopleOptions(mergeOfficerOptions([]));
       setMotiveOptions([]);
-      setSiteOptions([]);
+      setSiteOptions(DEFAULT_REPORT_SITE_OPTIONS);
       toast.error("No se pudieron cargar las opciones del formulario", {
         description: getErrorMessage(error),
       });
@@ -306,24 +344,6 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
       active = false;
     };
   }, [optionType]);
-
-  const saveMotives = async (
-    reportId: string,
-    tipoReporte: ReportType,
-    motives: string[],
-  ): Promise<string | null> => {
-    const motivosInsert = buildReportMotiveRows(reportId, tipoReporte, motives);
-    if (motivosInsert.length === 0) return null;
-
-    const { error } = await supabase.from("reporte_motivos").insert(motivosInsert);
-    if (!error) return null;
-    if (!isMotivesSchemaError(error.message)) return error.message;
-
-    const { error: fallbackError } = await supabase
-      .from("reporte_motivos")
-      .insert(buildLegacyReportMotiveRows(reportId, tipoReporte, motives));
-    return fallbackError?.message || null;
-  };
 
   const handleExtracted = (data: ExtractedReportData) => {
     if (data.tipo === "vehiculo") {
@@ -336,197 +356,40 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
     setShowForm(true);
   };
 
-  const saveVehicleData = async (vd: VehicleFormData): Promise<SaveReportResult> => {
-    const noReporte = normalizeReportNumber(vd.no_reporte);
-    if (!noReporte) return { error: "N. de reporte obligatorio" };
-    const anio = vd.fecha ? parseInt(vd.fecha.split("-")[0]) : new Date().getFullYear();
-    const unitKey = normalizeReportUnit(vd.vehiculo);
+  const saveVehicleData = (data: VehicleFormData): Promise<SaveReportResult> => createVehicleReport(data);
+  const saveBoatData = (data: BoatFormData): Promise<SaveReportResult> => createBoatReport(data);
 
-    const { data: matches, error: duplicateError } = await supabase
-      .from("reportes_vehiculo")
-      .select("id, no_reporte, vehiculo")
-      .eq("anio", anio);
-    if (duplicateError) return { error: duplicateError.message };
-
-    const existing = (matches || []).find(
-      (report) =>
-        normalizeReportNumber(report.no_reporte) === noReporte &&
-        normalizeReportUnit(report.vehiculo) === unitKey,
-    );
-    if (existing) {
-      return { error: `Duplicado: reporte ${noReporte} ya existe para ${vd.vehiculo || "sin unidad"} en ${anio}` };
-    }
-
-    const totalHoras = calcTotalHours(vd.hora_salida, vd.hora_regreso);
-    const { data: inserted, error } = await supabase.from("reportes_vehiculo").insert({
-      no_reporte: noReporte, anio, fecha: vd.fecha || null,
-      bitacora: vd.bitacora || null,
-      hora_salida: vd.hora_salida || null, hora_regreso: vd.hora_regreso || null,
-      total_horas: totalHoras, estacion: vd.estacion || null, vehiculo: vd.vehiculo || null,
-      destino: vd.destino || null,
-      estacion_combustible: vd.estacion_combustible || null,
-      lugar_combustible: vd.lugar_combustible || null,
-      cedula_juridica_combustible: vd.cedula_juridica_combustible || null,
-      no_factura: vd.no_factura || null,
-      combustible_trasegado_bomba: vd.combustible_trasegado_bomba,
-      total_combustible_antes_viaje: vd.total_combustible_antes_viaje,
-      combustible_gastado: vd.combustible_gastado,
-      saldo_combustible_despues_viaje: vd.saldo_combustible_despues_viaje,
-      kilometros_recorridos: vd.kilometros_recorridos, novedades: vd.novedades || null,
-    }).select().single();
-    if (error) return { error: error.message };
-
-    const reportId = inserted.id;
-    await replaceReportPeople(reportId, "vehiculo", [
-      ...(vd.chofer ? [{ nombre: normalizeName(vd.chofer), cedula: vd.chofer_cedula || null, roles: ["chofer"] }] : []),
-      ...(vd.oficial_a_cargo
-        ? [{ nombre: normalizeName(vd.oficial_a_cargo), cedula: vd.oficial_a_cargo_cedula || null, roles: ["oficial"] }]
-        : []),
-      ...vd.acompanantes
-        .filter(Boolean)
-        .map((name) => ({ nombre: normalizeName(name), roles: ["acompanante"] })),
-    ]);
-
-    const motiveError = await saveMotives(reportId, "vehiculo", vd.motivos);
-    if (motiveError) return { error: motiveError };
-
-    const sitiosInsert = vd.sitios_visitados
-      .filter((s) => s.nombre_sitio)
-      .map((s) => ({
-        reporte_id: reportId,
-        nombre_sitio: s.nombre_sitio,
-        zona: s.zona || null,
-        posicion: s.posicion || null,
-      }));
-    if (sitiosInsert.length > 0) await supabase.from("reporte_sitios").insert(sitiosInsert);
-
-    return { reportId };
-  };
-
-  const saveBoatData = async (bd: BoatFormData): Promise<SaveReportResult> => {
-    const noReporte = normalizeReportNumber(bd.no_reporte);
-    if (!noReporte) return { error: "N. de reporte obligatorio" };
-    const anio = bd.fecha ? parseInt(bd.fecha.split("-")[0]) : new Date().getFullYear();
-    const unitKey = normalizeReportUnit(bd.embarcacion);
-
-    const { data: matches, error: duplicateError } = await supabase
-      .from("reportes_embarcacion")
-      .select("id, no_reporte, embarcacion")
-      .eq("anio", anio);
-    if (duplicateError) return { error: duplicateError.message };
-
-    const existing = (matches || []).find(
-      (report) =>
-        normalizeReportNumber(report.no_reporte) === noReporte &&
-        normalizeReportUnit(report.embarcacion) === unitKey,
-    );
-    if (existing) {
-      return { error: `Duplicado: reporte ${noReporte} ya existe para ${bd.embarcacion || "sin unidad"} en ${anio}` };
-    }
-
-    const horasNavegadas = calcTotalHours(bd.hora_salida, bd.hora_regreso);
-    const totalTripulantes = countUniqueNormalizedNames([
-      bd.capitan,
-      ...bd.tripulantes.map((person) => person.nombre),
-    ].filter(Boolean));
-    const horasHombre = horasNavegadas != null ? horasNavegadas * totalTripulantes : null;
-
-    const { data: inserted, error } = await supabase.from("reportes_embarcacion").insert({
-      no_reporte: noReporte, anio, fecha: bd.fecha || null,
-      bitacora: bd.bitacora || null, folios: bd.folios || null,
-      estacion: bd.estacion || null, embarcacion: bd.embarcacion || null,
-      no_cierre_os: bd.no_cierre_os || null, hora_salida: bd.hora_salida || null,
-      hora_regreso: bd.hora_regreso || null, horas_navegadas: horasNavegadas,
-      horas_motor_babor: bd.horas_motor_babor, horas_motor_centro: bd.horas_motor_centro,
-      horas_motor_estribor: bd.horas_motor_estribor, horas_hombre: horasHombre,
-      destino: bd.destino || null, saldo_anterior: bd.saldo_anterior,
-      combustible_trasegado_bodega: bd.combustible_trasegado_bodega,
-      total_antes_viaje: bd.total_antes_viaje, combustible_trasegado_durante: bd.combustible_trasegado_durante,
-      combustible_gastado: bd.combustible_gastado, saldo_despues: bd.saldo_despues,
-      tipo_combustible: bd.tipo_combustible || null,
-      estacion_combustible: bd.estacion_combustible || null,
-      lugar_combustible: bd.lugar_combustible || null,
-      cedula_juridica_combustible: bd.cedula_juridica_combustible || null,
-      no_factura: bd.no_factura || null,
-      millas_nauticas: bd.millas_nauticas,
-      novedades: bd.novedades || null,
-    }).select().single();
-    if (error) return { error: error.message };
-
-    const reportId = inserted.id;
-    await replaceReportPeople(reportId, "embarcacion", [
-      ...(bd.capitan ? [{ nombre: normalizeName(bd.capitan), cedula: bd.capitan_cedula || null, roles: ["capitan"] }] : []),
-      ...(bd.encargado_mision
-        ? [{ nombre: normalizeName(bd.encargado_mision), cedula: bd.encargado_mision_cedula || null, roles: ["encargado_mision"] }]
-        : []),
-      ...(bd.operacional
-        ? [{ nombre: normalizeName(bd.operacional), cedula: bd.operacional_cedula || null, roles: ["operacional"] }]
-        : []),
-      ...bd.tripulantes
-        .filter((person) => person.nombre)
-        .map((person) => ({ nombre: normalizeName(person.nombre), roles: ["tripulante"] })),
-      ...bd.personas_particulares
-        .filter(Boolean)
-        .map((name) => ({ nombre: normalizeName(name), roles: ["particular"] })),
-    ]);
-
-    const motiveError = await saveMotives(reportId, "embarcacion", bd.motivos);
-    if (motiveError) return { error: motiveError };
-
-    const sitiosInsert = bd.sitios_visitados
-      .filter((s) => s.nombre_sitio)
-      .map((s) => ({
-        reporte_id: reportId,
-        nombre_sitio: s.nombre_sitio,
-        zona: s.zona || null,
-        posicion: s.posicion || null,
-      }));
-    if (sitiosInsert.length > 0) await supabase.from("reporte_sitios").insert(sitiosInsert);
-
-    const inspectedInsert = bd.embarcaciones_inspeccionadas
-      .filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona || item.posicion)
-      .map((item) => ({
-        reporte_id: reportId,
-        nombre: item.nombre || "",
-        matricula: item.matricula || null,
-        no_inspeccion: item.no_inspeccion || null,
-        zona: item.zona || null,
-        posicion: item.posicion || null,
-      }));
-    if (inspectedInsert.length > 0) {
-      await supabase.from("reporte_embarcaciones_inspeccionadas").insert(inspectedInsert);
-    }
-
-    return { reportId };
-  };
-
-  const handleBatchSave = async (items: BatchItem[]): Promise<{ saved: number; errors: { index: number; reason: string }[] }> => {
+  const handleBatchSave = async (
+    items: BatchItem[],
+  ): Promise<{ saved: number; errors: { index: number; reason: string }[]; savedReports: { index: number; reportId: string; tipo: ReportType }[] }> => {
     let saved = 0;
     const errors: { index: number; reason: string }[] = [];
+    const savedReports: { index: number; reportId: string; tipo: ReportType }[] = [];
 
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i];
       try {
-        let errorMsg: string | null = null;
+        let result: SaveReportResult = {};
         if (item.tipo === "vehiculo" && item.vehicleData) {
-          errorMsg = (await saveVehicleData(item.vehicleData)).error || null;
+          result = await saveVehicleData(item.vehicleData);
         } else if (item.tipo === "embarcacion" && item.boatData) {
-          errorMsg = (await saveBoatData(item.boatData)).error || null;
+          result = await saveBoatData(item.boatData);
         } else {
-          errorMsg = "Tipo de reporte no reconocido";
+          result = { error: "Tipo de reporte no reconocido" };
         }
 
-        if (errorMsg) {
-          errors.push({ index: i, reason: errorMsg });
+        if (result.error || !result.reportId || !item.tipo) {
+          errors.push({ index: i, reason: result.error || "No se pudo guardar el reporte" });
         } else {
           saved += 1;
+          savedReports.push({ index: i, reportId: result.reportId, tipo: item.tipo });
         }
       } catch (err) {
         errors.push({ index: i, reason: err instanceof Error ? err.message : "Error desconocido" });
       }
     }
 
-    return { saved, errors };
+    return { saved, errors, savedReports };
   };
 
   const saveVehicle = async () => {
@@ -887,6 +750,12 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
                 headerEyebrow="Carga de archivos"
                 headerTitle="Seleccionar reportes Excel"
                 headerDescription="Suba archivos XLSX o XLS para extraer datos y revisar cada reporte antes de guardarlo."
+                stationOptions={MANUAL_STATIONS}
+                vehicleUnitOptions={vehicleUnitOptions}
+                boatUnitOptions={boatUnitOptions}
+                peopleOptions={manualPeopleOptions}
+                motiveOptions={motiveOptions}
+                siteOptions={siteOptions}
               />
             </TabsContent>
             <TabsContent value="manual">

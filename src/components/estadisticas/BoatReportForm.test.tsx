@@ -23,6 +23,8 @@ const baseData: BoatFormData = {
   capitan_cedula: "",
   encargado_mision: "Encargado Actual",
   encargado_mision_cedula: "",
+  oficial_director: "Oficial Actual",
+  oficial_director_cedula: "",
   operacional: "Operacional Actual",
   operacional_cedula: "",
   tripulantes: [{ nombre: "", cedula: "" }],
@@ -287,7 +289,7 @@ describe("BoatReportForm", () => {
     expect(getCommandItem("Emergencia")).toHaveAttribute("data-disabled", "true");
   });
 
-  it("selects tripulantes without a cap, blocks capitan and encargado, and hides cedula fields", () => {
+  it("selects tripulantes without a cap, allows assigned role names, and hides cedula fields", () => {
     renderBoatForm({
       data: {
         ...baseData,
@@ -300,10 +302,12 @@ describe("BoatReportForm", () => {
     expect(screen.getByText("Sin tripulantes seleccionados")).toBeInTheDocument();
 
     openTripulantesSelector();
-    expect(getCommandItem("Yeiner Castro Alvarez")).toHaveAttribute("data-disabled", "true");
-    expect(getCommandItem("Josue Acevedo Rios")).toHaveAttribute("data-disabled", "true");
+    expect(getCommandItem("Yeiner Castro Alvarez")).not.toHaveAttribute("data-disabled", "true");
+    expect(getCommandItem("Josue Acevedo Rios")).not.toHaveAttribute("data-disabled", "true");
 
     [
+      "Yeiner Castro Alvarez",
+      "Josue Acevedo Rios",
       "Roberth Sanchez Parra",
       "Cesar Alvarez Martinez",
       "Olman Alfaro Quiros",
@@ -315,13 +319,13 @@ describe("BoatReportForm", () => {
       fireEvent.click(getCommandItem(name));
     });
 
-    expect(screen.getByRole("button", { name: /7 tripulantes seleccionados/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /9 tripulantes seleccionados/i })).toBeInTheDocument();
     expect(screen.queryByText("Maximo 6 tripulantes seleccionados.")).not.toBeInTheDocument();
     expect(getCommandItem("Dara Chavarria Hernandez")).not.toHaveAttribute("data-disabled", "true");
     expect(screen.queryByPlaceholderText("Cedula")).not.toBeInTheDocument();
   }, 10000);
 
-  it("removes only the clicked tripulante when blocked role names are already listed", () => {
+  it("removes only the clicked tripulante when assigned role names are already listed", () => {
     renderBoatForm({
       data: {
         ...baseData,
@@ -349,8 +353,10 @@ describe("BoatReportForm", () => {
     renderBoatForm();
 
     const tripulantes = screen.getByText("Tripulantes");
+    const oficialDirector = screen.getByText("Oficial Director / Ambiental");
     const operacional = screen.getByText("Operacional");
 
+    expect(oficialDirector.compareDocumentPosition(tripulantes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(tripulantes.compareDocumentPosition(operacional) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /capitan actual/i }));
@@ -361,9 +367,13 @@ describe("BoatReportForm", () => {
     fireEvent.click(getCommandItem("Josue Acevedo Rios"));
     expect(screen.getByDisplayValue("603290196")).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: /oficial actual/i }));
+    fireEvent.click(getCommandItem("Roberth Sanchez Parra"));
+    expect(screen.getByDisplayValue("503950054")).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: /operacional actual/i }));
     fireEvent.click(getCommandItem("Cesar Alvarez Martinez"));
-    expect(screen.getByDisplayValue("700270843")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("208060620")).toBeInTheDocument();
   }, 10000);
 
   it("shows fixed fuel fields, toggles trasegado fields, calculates saldo, and preserves fixed data", () => {

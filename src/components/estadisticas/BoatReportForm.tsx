@@ -56,6 +56,8 @@ export interface BoatFormData {
   capitan_cedula: string;
   encargado_mision: string;
   encargado_mision_cedula: string;
+  oficial_director: string;
+  oficial_director_cedula: string;
   operacional: string;
   operacional_cedula: string;
   tripulantes: BoatPersonData[];
@@ -96,6 +98,9 @@ interface Props {
   useFuelLoadToggle?: boolean;
   fuelLoadEnabled?: boolean;
   onFuelLoadEnabledChange?: (enabled: boolean) => void;
+  onDelete?: () => void;
+  deleting?: boolean;
+  deleteLabel?: string;
 }
 
 const MAX_MOTIVOS = 10;
@@ -346,6 +351,9 @@ const BoatReportForm = ({
   useFuelLoadToggle = false,
   fuelLoadEnabled: controlledFuelLoadEnabled,
   onFuelLoadEnabledChange,
+  onDelete,
+  deleting = false,
+  deleteLabel,
 }: Props) => {
   const hasFuelLoadData =
     !isEmptyReportValue(data.saldo_anterior) ||
@@ -409,24 +417,16 @@ const BoatReportForm = ({
   };
 
   const updatePersonWithCedula = (
-    nameKey: "capitan" | "encargado_mision" | "operacional",
-    cedulaKey: "capitan_cedula" | "encargado_mision_cedula" | "operacional_cedula",
+    nameKey: "capitan" | "encargado_mision" | "oficial_director" | "operacional",
+    cedulaKey: "capitan_cedula" | "encargado_mision_cedula" | "oficial_director_cedula" | "operacional_cedula",
     value: string,
   ) => {
     const cleanValue = normalizeKnownPersonName(value);
     const officer = findOfficerByName(cleanValue);
-    const blockedValue = normalizePersonSelectionValue(cleanValue);
     onChange({
       ...data,
       [nameKey]: cleanValue,
       ...(officer ? { [cedulaKey]: officer.identificacion || "" } : {}),
-      ...(nameKey === "capitan" || nameKey === "encargado_mision"
-        ? {
-            tripulantes: data.tripulantes.filter(
-              (tripulante) => normalizePersonSelectionValue(tripulante.nombre) !== blockedValue,
-            ),
-          }
-        : {}),
     });
   };
 
@@ -655,10 +655,19 @@ const BoatReportForm = ({
 
   const updateTripulantes = (names: string[]) => {
     const cleanNames = normalizeKnownPersonNames(names);
-    const next = cleanNames.map((name) => ({
-      nombre: name,
-      cedula: "",
-    }));
+    const seen = new Set<string>();
+    const next = cleanNames.reduce<BoatPersonData[]>((items, name) => {
+      const key = normalizePersonSelectionValue(name);
+      if (!key || seen.has(key)) return items;
+      seen.add(key);
+      return [
+        ...items,
+        {
+          nombre: name,
+          cedula: findOfficerByName(name)?.identificacion || "",
+        },
+      ];
+    }, []);
     update("tripulantes", next);
   };
 
@@ -751,6 +760,15 @@ const BoatReportForm = ({
                 />
               ))}
               {textField("encargado_mision_cedula", "Cedula Encargado")}
+              {fieldShell("oficial_director", "Oficial Director / Ambiental", (
+                <ReportComboboxInput
+                  value={data.oficial_director || ""}
+                  onChange={(value) => updatePersonWithCedula("oficial_director", "oficial_director_cedula", value)}
+                  options={officerOptions}
+                  className={pendingInputClass(data.oficial_director)}
+                />
+              ))}
+              {textField("oficial_director_cedula", "Cedula Oficial Director")}
             </div>
 
             <div>
@@ -764,8 +782,6 @@ const BoatReportForm = ({
                 placeholder="Seleccionar tripulantes..."
                 searchPlaceholder="Buscar o escribir tripulante..."
                 emptyText="Sin tripulantes seleccionados"
-                blockedValues={[data.capitan, data.encargado_mision]}
-                blockedLabel="Asignado"
                 pending={showPendingState && hasPendingItems(data.tripulantes)}
               />
               <PendingHint show={data.tripulantes.length === 0} />
@@ -938,7 +954,15 @@ const BoatReportForm = ({
       </section>
 
       {!hideActions && (
-        <ReportFormActionBar onSave={onSave} onCancel={onCancel} saving={saving} saveLabel={saveLabel} />
+        <ReportFormActionBar
+          onSave={onSave}
+          onCancel={onCancel}
+          saving={saving}
+          saveLabel={saveLabel}
+          onDelete={onDelete}
+          deleting={deleting}
+          deleteLabel={deleteLabel}
+        />
       )}
     </Card>
   );

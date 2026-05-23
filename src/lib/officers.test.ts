@@ -7,8 +7,10 @@ describe("officers", () => {
     expect(findOfficerByName("JOSUE ACEVEDO RIOS")?.identificacion).toBe("603290196");
   });
 
-  it("returns null identification when the officer has no id", () => {
-    expect(findOfficerByName("Luis Carlos Gonzalez Jarquin")?.identificacion).toBeNull();
+  it("uses the station officer identification list", () => {
+    expect(findOfficerByName("Jorge Gonzalez Barrantes")?.identificacion).toBe("603100467");
+    expect(findOfficerByName("Luis Carlos Gonzalez Jarquin")?.identificacion).toBe("503740662");
+    expect(findOfficerByName("Michael Rojas Brenes")?.identificacion).toBe("603310561");
   });
 
   it("merges officer options without duplicating equivalent names", () => {

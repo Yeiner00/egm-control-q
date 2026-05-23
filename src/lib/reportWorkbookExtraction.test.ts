@@ -100,6 +100,8 @@ describe("extractReportFromWorkbook", () => {
     expect(data?.saldo_despues).toBe(330);
     expect(data?.millas_nauticas).toBe(21);
     expect(data?.estacion_combustible).toBe("");
+    expect(data?.oficial_director).toBe("Comandante Randall Mena Villavicencio");
+    expect(data?.oficial_director_cedula).toBe("205200912");
     expect(data?.operacional).toBe("Subintendente Pablo Barrantes Palma");
     expect(data?.capitan).toBe("Subintendente Pablo Barrantes Palma");
     expect(data?.encargado_mision).toBe("Agente Jhonny Araya Chacon");
@@ -128,6 +130,9 @@ describe("extractReportFromWorkbook", () => {
       H32: "Millas Nauticas recorridas (EN NUMEROS)",
       B33: "MUELLE",
       H33: 7,
+      B35: "OFICIAL DIRECTOR /AMBIENTAL",
+      C35: "Comandante Randall Mena Villavicencio",
+      H35: 205200912,
       B36: "OPERACIONAL:",
       C36: "Subintendente Dara Chavarria Hernandez",
       H36: 304310005,
@@ -148,6 +153,8 @@ describe("extractReportFromWorkbook", () => {
     expect(data?.saldo_despues).toBe(280);
     expect(data?.millas_nauticas).toBe(7);
     expect(data?.estacion_combustible).toBe("MUELLE");
+    expect(data?.oficial_director).toBe("Comandante Randall Mena Villavicencio");
+    expect(data?.oficial_director_cedula).toBe("205200912");
     expect(data?.operacional).toBe("Subintendente Dara Chavarria Hernandez");
   });
 

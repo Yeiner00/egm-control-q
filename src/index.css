@@ -276,11 +276,12 @@
   }
 
   .totals-group-grid {
-    @apply grid grid-cols-1 gap-2.5 xl:grid-cols-2;
+    @apply grid grid-cols-1 gap-2;
   }
 
   .totals-list-card {
-    @apply space-y-2 rounded-[0.34rem] border border-border/60 bg-background/70 px-3 py-2.5;
+    @apply grid gap-2 rounded-[0.34rem] border border-border/60 bg-background/70 px-3 py-2.5;
+    grid-template-columns: minmax(0, 1fr) max-content;
   }
 
   .totals-list-card-total {
@@ -288,11 +289,13 @@
   }
 
   .totals-list-header {
-    @apply flex items-center justify-between gap-2;
+    @apply min-w-0;
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .totals-heading-main {
-    @apply flex min-w-0 items-center gap-2;
+    @apply flex min-w-0 flex-wrap items-center gap-2;
   }
 
   .totals-heading-actions {
@@ -308,12 +311,21 @@
     text-box: trim-both cap alphabetic;
   }
 
+  .totals-unit-icon {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.3rem] border border-primary/15 bg-primary/10 text-primary;
+  }
+
   .totals-copy-button {
     @apply h-7 w-7 rounded-[0.3rem] border border-transparent px-0 text-muted-foreground hover:border-border/60 hover:bg-background/80 hover:text-foreground;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
   }
 
   .totals-chip-list {
-    @apply flex flex-wrap gap-1;
+    @apply flex min-w-0 flex-wrap gap-1;
+    grid-column: 1 / -1;
   }
 
   .totals-chip {
@@ -325,15 +337,18 @@
   }
 
   .totals-role-grid {
-    @apply grid grid-cols-1 gap-2.5 xl:grid-cols-2;
+    @apply grid grid-cols-1 gap-2;
   }
 
   .totals-role-card {
-    @apply space-y-2 rounded-[0.34rem] border border-border/60 bg-background/70 px-3 py-2.5;
+    @apply grid gap-2 rounded-[0.34rem] border border-border/60 bg-background/70 px-3 py-2.5;
+    grid-template-columns: minmax(0, 1fr) max-content;
   }
 
   .totals-role-header {
-    @apply flex items-center justify-between gap-2;
+    @apply min-w-0;
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .totals-role-icon {
@@ -350,8 +365,181 @@
     text-box: trim-both cap alphabetic;
   }
 
+  @media (min-width: 900px) {
+    .totals-list-card,
+    .totals-role-card {
+      grid-template-columns: minmax(14rem, 0.34fr) minmax(0, 1fr) max-content;
+      align-items: center;
+    }
+
+    .totals-list-header,
+    .totals-role-header {
+      grid-column: 1;
+    }
+
+    .totals-chip-list {
+      @apply justify-start;
+      grid-column: 2;
+    }
+
+    .totals-copy-button {
+      grid-column: 3;
+    }
+  }
+
   .section-icon-shell {
     @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.42rem] border border-border/70 bg-muted/45 text-primary;
+  }
+
+  .report-list-row {
+    @apply overflow-hidden rounded-[0.46rem] border border-border/75 bg-background/70 text-foreground transition-colors duration-150;
+    box-shadow: 0 14px 34px -30px rgba(15, 23, 42, 0.48);
+    container-type: inline-size;
+  }
+
+  .report-list-row:hover {
+    @apply border-primary/25 bg-background/90;
+  }
+
+  .report-list-row-saved {
+    @apply border-primary/30 bg-primary/5;
+  }
+
+  .report-list-row-error {
+    @apply border-destructive/55 bg-destructive/5;
+  }
+
+  .report-list-row-shell {
+    @apply grid gap-2 p-2;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-list-trigger {
+    @apply flex min-w-0 items-center gap-3 rounded-[0.36rem] p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  button.report-list-trigger {
+    @apply w-full hover:bg-muted/40;
+  }
+
+  .report-list-trigger-static {
+    @apply w-full;
+  }
+
+  .report-list-status {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.32rem] border border-primary/15 bg-primary/10 text-primary;
+  }
+
+  .report-list-row-error .report-list-status {
+    @apply border-destructive/20 bg-destructive/10 text-destructive;
+  }
+
+  .report-list-row-saved .report-list-status {
+    @apply border-primary/20 bg-primary/15 text-primary;
+  }
+
+  .report-list-main {
+    @apply min-w-0 space-y-2;
+  }
+
+  .report-list-identity {
+    @apply flex min-w-0 items-center;
+  }
+
+  .report-list-primary {
+    @apply flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1;
+  }
+
+  .report-list-number {
+    @apply inline-flex shrink-0 items-center gap-1.5 font-semibold text-primary;
+  }
+
+  .report-list-date {
+    @apply inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground;
+  }
+
+  .report-list-title {
+    @apply min-w-0 truncate text-sm font-semibold text-foreground;
+  }
+
+  .report-list-station {
+    @apply inline-flex max-w-full items-center truncate rounded-[0.28rem] bg-muted px-2 py-0.5 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-foreground;
+  }
+
+  .report-list-facts {
+    @apply flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground;
+  }
+
+  .report-list-fact {
+    @apply inline-flex min-w-0 items-center gap-1.5 whitespace-nowrap;
+  }
+
+  .report-list-role {
+    @apply font-semibold text-foreground;
+  }
+
+  .report-list-fact-label {
+    @apply text-muted-foreground;
+  }
+
+  .report-list-fact-value {
+    @apply font-semibold text-foreground;
+  }
+
+  .report-list-row-state {
+    @apply max-w-full whitespace-normal text-xs font-medium;
+  }
+
+  .report-list-icon {
+    @apply h-4 w-4 shrink-0 text-current;
+    stroke-width: 1.9;
+  }
+
+  .report-list-tags {
+    @apply inline-flex min-w-0 flex-wrap items-center gap-1.5;
+  }
+
+  .report-list-tag {
+    @apply inline-flex max-w-full items-center truncate rounded-[0.28rem] bg-muted px-2 py-0.5 text-[0.75rem] font-medium text-muted-foreground;
+  }
+
+  .report-list-actions {
+    @apply flex min-w-0 flex-wrap items-center justify-end gap-1 border-t border-border/50 px-2 pt-2;
+  }
+
+  .report-list-action {
+    @apply h-8 w-8 rounded-[0.32rem] text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-60;
+  }
+
+  .report-list-action-danger {
+    @apply hover:bg-destructive/10 hover:text-destructive;
+  }
+
+  .report-list-row-details {
+    @apply border-t border-border/65 bg-card/65 p-3;
+  }
+
+  .report-list-row-notes {
+    @apply border-t border-border/55 bg-muted/45 px-4 py-3 text-sm leading-6 text-muted-foreground;
+  }
+
+  .report-list-row-details > .card,
+  .report-list-row-details > [class*="rounded"] {
+    @apply shadow-none;
+  }
+
+  @container (min-width: 720px) {
+    .report-list-row-shell {
+      grid-template-columns: minmax(0, 1fr) max-content;
+    }
+
+    .report-list-actions {
+      @apply border-t-0 px-0 pt-0;
+    }
+
+    .report-list-main {
+      @apply space-y-1.5;
+    }
   }
 
   .proposal-report-card {

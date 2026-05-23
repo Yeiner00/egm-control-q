@@ -105,7 +105,10 @@ describe("ReportUploader", () => {
     expect(maxActiveRequests).toBe(1);
 
     releases[1]();
-    await waitFor(() => expect(screen.getAllByText("Vehículo")).toHaveLength(2));
+    await waitFor(() => {
+      expect(screen.getByText("first.xlsx")).toBeInTheDocument();
+      expect(screen.getByText("second.xlsx")).toBeInTheDocument();
+    });
     expect(maxActiveRequests).toBe(1);
   });
 

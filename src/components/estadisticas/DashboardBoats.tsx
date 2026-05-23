@@ -39,8 +39,7 @@ import { getErrorMessage } from "@/lib/errorMessage";
 import { buildReportMonthRanges, getReportMonthBounds, isDateInReportMonthRanges } from "@/lib/reportMonthFilters";
 import { createAiServiceError, createAiServiceErrorFromSupabaseFunctionError, runAiTask } from "@/lib/aiRateLimit";
 import { loadAvailableReportYears } from "@/lib/reportYears";
-import { downloadReportExcel } from "@/lib/reportExcelExport";
-import ProposalReportCard from "./ProposalReportCard";
+import SavedReportListRow, { type SavedReportChange } from "./SavedReportListRow";
 import ProposalTotalsSection from "./ProposalTotalsSection";
 
 const MONTHS = [
@@ -65,7 +64,7 @@ interface DashboardBoatsProps {
   onEditReport?: (target: { tipo: "embarcacion"; reportId: string }) => void;
 }
 
-const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
+const DashboardBoats = (_props: DashboardBoatsProps) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [persona, setPersona] = useState("");
@@ -81,7 +80,6 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
   const [summaryAiMessage, setSummaryAiMessage] = useState("");
   const [expandedNovedades, setExpandedNovedades] = useState<Set<string>>(new Set());
   const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
-  const [printingReportId, setPrintingReportId] = useState("");
 
   useEffect(() => {
     const loadNames = async () => {
@@ -138,19 +136,7 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
     });
   };
 
-  const printReport = async (reportId: string) => {
-    setPrintingReportId(reportId);
-    try {
-      await downloadReportExcel("embarcacion", reportId);
-      toast.success("Excel generado correctamente");
-    } catch {
-      toast.error("No se pudo generar el Excel");
-    } finally {
-      setPrintingReportId("");
-    }
-  };
-
-  const search = async () => {
+  const search = async (options: { suppressEmptyToast?: boolean } = {}) => {
     if (selectedMonths.length === 0 || !persona.trim()) {
       toast.error("Selecciona uno o mas meses y una persona");
       return;
@@ -184,7 +170,9 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
         setReports([]);
         setMotivos({});
         setRolesByReport({});
-        toast.info("No se encontraron reportes para ese periodo");
+        if (!options.suppressEmptyToast) {
+          toast.info("No se encontraron reportes para ese periodo");
+        }
         setLoading(false);
         return;
       }
@@ -199,7 +187,9 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
         setReports([]);
         setMotivos({});
         setRolesByReport({});
-        toast.info("No se encontraron reportes para esa persona");
+        if (!options.suppressEmptyToast) {
+          toast.info("No se encontraron reportes para esa persona");
+        }
         setLoading(false);
         return;
       }
@@ -241,6 +231,37 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const removeReportFromCurrentResults = (reportId: string) => {
+    setReports((currentReports) => currentReports.filter((report) => report.id !== reportId));
+    setMotivos((currentMotivos) => {
+      const nextMotivos = { ...currentMotivos };
+      delete nextMotivos[reportId];
+      return nextMotivos;
+    });
+    setRolesByReport((currentRoles) => {
+      const nextRoles = { ...currentRoles };
+      delete nextRoles[reportId];
+      return nextRoles;
+    });
+    setExpandedNovedades((currentExpanded) => {
+      const nextExpanded = new Set(currentExpanded);
+      nextExpanded.delete(reportId);
+      return nextExpanded;
+    });
+    setSummary("");
+  };
+
+  const handleReportChanged = async (change: SavedReportChange) => {
+    if (change.action === "deleted") {
+      removeReportFromCurrentResults(change.reportId);
+    } else {
+      setSummary("");
+      setExpandedNovedades(new Set());
+    }
+
+    await search({ suppressEmptyToast: change.action === "deleted" });
   };
 
   const copySummary = async () => {
@@ -406,7 +427,7 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
                 </PopoverContent>
               </Popover>
             </div>
-            <Button onClick={search} disabled={loading} className="xl:min-w-32">
+            <Button onClick={() => void search()} disabled={loading} className="xl:min-w-32">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
             </Button>
           </div>
@@ -426,36 +447,50 @@ const DashboardBoats = ({ onEditReport }: DashboardBoatsProps) => {
                           {selectedYear}
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {reports.length} registro{reports.length === 1 ? "" : "s"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {loading && (
+                          <Badge variant="secondary" className="text-xs">
+                            Actualizando
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {reports.length} registro{reports.length === 1 ? "" : "s"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="result-panel-grid">
+                    <div className="space-y-2">
                       {reports.map((r) => (
-                        <ProposalReportCard
+                        <SavedReportListRow
                           key={r.id}
+                          origin="propuesta"
+                          type="embarcacion"
+                          reportId={r.id}
                           date={r.fecha}
                           reportNumber={r.no_reporte}
                           unit={r.embarcacion}
-                          secondaryLabel={r.estacion}
+                          station={r.estacion}
                           role={buildRoleDisplay(rolesByReport[r.id] || [])}
                           metrics={[
                             {
                               label: "Millas",
                               value: r.millas_nauticas,
+                              icon: Waves,
                             },
                             {
                               label: "Horas nav",
                               value: r.horas_navegadas == null ? null : decimalToHHMM(r.horas_navegadas),
+                              icon: Clock3,
                             },
                           ]}
                           tags={motivos[r.id] || []}
-                          expanded={expandedNovedades.has(r.id)}
-                          novedades={r.novedades}
+                          novedadesExpanded={expandedNovedades.has(r.id)}
                           onToggleNovedades={() => toggleNovedades(r.id)}
-                          onPrint={() => printReport(r.id)}
-                          printing={printingReportId === r.id}
-                          onEdit={onEditReport ? () => onEditReport({ tipo: "embarcacion", reportId: r.id }) : undefined}
+                          novedadesContent={r.novedades ? (
+                            <p className="whitespace-pre-line">{r.novedades}</p>
+                          ) : (
+                            <span>Sin novedades registradas.</span>
+                          )}
+                          onChanged={handleReportChanged}
                         />
                       ))}
                     </div>

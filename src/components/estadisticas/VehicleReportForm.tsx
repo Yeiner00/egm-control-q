@@ -69,6 +69,9 @@ interface Props {
   onFuelLoadEnabledChange?: (enabled: boolean) => void;
   showPendingState?: boolean;
   saveLabel?: string;
+  onDelete?: () => void;
+  deleting?: boolean;
+  deleteLabel?: string;
 }
 
 const MAX_ACOMPANANTES = 4;
@@ -281,6 +284,9 @@ const VehicleReportForm = ({
   onFuelLoadEnabledChange,
   showPendingState = true,
   saveLabel = "Guardar Reporte",
+  onDelete,
+  deleting = false,
+  deleteLabel,
 }: Props) => {
   const hasFuelLoadData =
     !isEmptyReportValue(data.estacion_combustible) ||
@@ -751,7 +757,15 @@ const VehicleReportForm = ({
       </section>
 
       {!hideActions && (
-        <ReportFormActionBar onSave={onSave} onCancel={onCancel} saving={saving} saveLabel={saveLabel} />
+        <ReportFormActionBar
+          onSave={onSave}
+          onCancel={onCancel}
+          saving={saving}
+          saveLabel={saveLabel}
+          onDelete={onDelete}
+          deleting={deleting}
+          deleteLabel={deleteLabel}
+        />
       )}
     </Card>
   );

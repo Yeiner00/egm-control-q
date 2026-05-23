@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import type { ProposalRoleSummary, ProposalTotalsGroup } from "@/lib/proposalTotals";
 import type { LucideIcon } from "lucide-react";
-import { Anchor, CarFront, ClipboardCheck, Copy, ShieldCheck, UserRound, UsersRound } from "lucide-react";
+import { Anchor, CarFront, ClipboardCheck, Copy, Layers3, ShieldCheck, Ship, UserRound, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProposalTotalsMetric {
@@ -42,6 +42,8 @@ const ProposalTotalsSection = ({
   totalReportNumbers,
   roleSummaries,
 }: ProposalTotalsSectionProps) => {
+  const UnitIcon = unitSectionTitle.toLowerCase().includes("embarcacion") ? Ship : CarFront;
+
   const copyReportList = (reportNumbers: string[], label: string) => {
     navigator.clipboard.writeText(reportNumbers.join(", "));
     toast.success(`Lista copiada de ${label.toLowerCase()}`);
@@ -78,21 +80,11 @@ const ProposalTotalsSection = ({
             <div key={group.name} className="totals-list-card">
               <div className="totals-list-header">
                 <div className="totals-heading-main">
+                  <span className="totals-unit-icon" aria-hidden="true">
+                    <UnitIcon className="h-4 w-4" />
+                  </span>
                   <div className="totals-list-title">{group.name}</div>
-                </div>
-                <div className="totals-heading-actions">
                   <div className="totals-list-meta">{formatReportCount(group.reportNumbers.length)}</div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="totals-copy-button"
-                    title={`Copiar reportes de ${group.name}`}
-                    aria-label={`Copiar reportes de ${group.name}`}
-                    onClick={() => copyReportList(group.reportNumbers, group.name)}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               </div>
               <div className="totals-chip-list">
@@ -102,27 +94,28 @@ const ProposalTotalsSection = ({
                   </span>
                 ))}
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="totals-copy-button"
+                title={`Copiar reportes de ${group.name}`}
+                aria-label={`Copiar reportes de ${group.name}`}
+                onClick={() => copyReportList(group.reportNumbers, group.name)}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
             </div>
           ))}
 
           <div className="totals-list-card totals-list-card-total">
             <div className="totals-list-header">
               <div className="totals-heading-main">
+                <span className="totals-unit-icon" aria-hidden="true">
+                  <Layers3 className="h-4 w-4" />
+                </span>
                 <div className="totals-list-title">Lista total</div>
-              </div>
-              <div className="totals-heading-actions">
                 <div className="totals-list-meta">{formatReportCount(totalReportNumbers.length)}</div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="totals-copy-button"
-                  title="Copiar lista total"
-                  aria-label="Copiar lista total"
-                  onClick={() => copyReportList(totalReportNumbers, "lista total")}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
               </div>
             </div>
             <div className="totals-chip-list">
@@ -132,6 +125,17 @@ const ProposalTotalsSection = ({
                 </span>
               ))}
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="totals-copy-button"
+              title="Copiar lista total"
+              aria-label="Copiar lista total"
+              onClick={() => copyReportList(totalReportNumbers, "lista total")}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       </div>
@@ -151,20 +155,7 @@ const ProposalTotalsSection = ({
                         <RoleIcon className="h-4 w-4" />
                       </span>
                       <div className="totals-role-title">{role.label}</div>
-                    </div>
-                    <div className="totals-heading-actions">
                       <div className="totals-role-meta">{formatRoleCount(role.count)}</div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="totals-copy-button"
-                        title={`Copiar reportes de ${role.label}`}
-                        aria-label={`Copiar reportes de ${role.label}`}
-                        onClick={() => copyReportList(role.reportNumbers, role.label)}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
                     </div>
                   </div>
                   <div className="totals-chip-list">
@@ -174,6 +165,17 @@ const ProposalTotalsSection = ({
                       </span>
                     ))}
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="totals-copy-button"
+                    title={`Copiar reportes de ${role.label}`}
+                    aria-label={`Copiar reportes de ${role.label}`}
+                    onClick={() => copyReportList(role.reportNumbers, role.label)}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               );
             })}

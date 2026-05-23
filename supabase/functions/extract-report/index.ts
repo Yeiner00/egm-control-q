@@ -90,6 +90,7 @@ Para EMBARCACION extraer:
 - destino, motivos (array de strings, cada motivo individual)
 - capitan, capitan_cedula
 - encargado_mision, encargado_mision_cedula
+- oficial_director, oficial_director_cedula
 - operacional, operacional_cedula
 - tripulantes (array de {nombre, cedula})
 - personas_particulares (array de strings)
@@ -199,6 +200,8 @@ Responde SOLO con JSON.`;
                   capitan_cedula: { type: "string" },
                   encargado_mision: { type: "string" },
                   encargado_mision_cedula: { type: "string" },
+                  oficial_director: { type: "string" },
+                  oficial_director_cedula: { type: "string" },
                   operacional: { type: "string" },
                   operacional_cedula: { type: "string" },
                   tripulantes: { type: "array", items: personSchema },

@@ -43,6 +43,14 @@ const boatReport = {
   novedades: "Sin novedad",
 };
 
+const vehicleReport = {
+  id: "vehicle-1",
+  no_reporte: "0017",
+  anio: 2026,
+  fecha: "2026-04-01",
+  vehiculo: "SNG-16",
+};
+
 let vehicleUnitsDelay = 0;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -51,6 +59,20 @@ const resolveList = async ({ table, selected }: QueryState) => {
   if (table === "reportes_vehiculo" && selected === "vehiculo") {
     await delay(vehicleUnitsDelay);
     return { data: [{ vehiculo: "SNG-08" }, { vehiculo: "SNG-16" }, { vehiculo: "SNG-25" }], error: null };
+  }
+
+  if (table === "reportes_vehiculo" && selected.includes("id, no_reporte")) {
+    return {
+      data: [
+        {
+          id: vehicleReport.id,
+          no_reporte: vehicleReport.no_reporte,
+          fecha: vehicleReport.fecha,
+          vehiculo: vehicleReport.vehiculo,
+        },
+      ],
+      error: null,
+    };
   }
 
   if (table === "reportes_embarcacion" && selected === "embarcacion") {
@@ -156,8 +178,28 @@ vi.mock("@/lib/reportSites", async () => {
 describe("ManageReport", () => {
   beforeEach(() => {
     vehicleUnitsDelay = 0;
+    fromMock.mockClear();
     fromMock.mockImplementation((table: string) => createQuery(table));
   });
+
+  const getFieldButton = (label: string | ((content: string) => boolean)) => {
+    const labelElement = screen.getByText(label);
+    const field = labelElement.parentElement;
+    if (!(field instanceof HTMLElement)) {
+      throw new Error("Filter field not found");
+    }
+
+    return within(field).getByRole("button");
+  };
+
+  const selectMonth = async (month: string) => {
+    fireEvent.click(getFieldButton("Mes (opcional)"));
+    fireEvent.click(await screen.findByText(month));
+  };
+
+  const openReportFilter = () => {
+    fireEvent.click(getFieldButton((content) => content.includes("Reporte") && content.startsWith("N")));
+  };
 
   it("renders the report management search filters without crashing", async () => {
     render(<ManageReport />);
@@ -168,6 +210,26 @@ describe("ManageReport", () => {
     await waitFor(() => {
       expect(screen.getByText("Sin resultado seleccionado")).toBeInTheDocument();
     });
+  });
+
+  it("does not classify first-day reports under the previous month", async () => {
+    render(<ManageReport />);
+
+    await selectMonth("Marzo");
+    openReportFilter();
+
+    await waitFor(() => {
+      expect(screen.queryByText("#0017")).not.toBeInTheDocument();
+    });
+  });
+
+  it("keeps first-day reports in their selected month", async () => {
+    render(<ManageReport />);
+
+    await selectMonth("Abril");
+    openReportFilter();
+
+    expect(await screen.findByText("#0017")).toBeInTheDocument();
   });
 
   it("keeps boat unit options when opening a boat report from proposals", async () => {

@@ -237,7 +237,7 @@ describe("patchStatisticWorkbookBytes", () => {
     const boatSheet = workbook.Sheets["GC-38-22"];
 
     expect(vehicleSheet.B24.v).toBeCloseTo(7 / 24);
-    expect(boatSheet.C24.v).toBeCloseTo(6 / 24);
+    expect(boatSheet.C24.v).toBeCloseTo(8 / 24);
     expect(patched.summary.omittedData.join(" ")).not.toContain("Fila 24");
   }, TEST_TIMEOUT);
 

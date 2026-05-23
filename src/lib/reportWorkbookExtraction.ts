@@ -218,6 +218,9 @@ const extractBoatReport = (sheet: WorkSheet): ExtractedReportData => {
   const fuelDetailsRow = fuelDetailsHeaderRow + 1;
   const signatureStartRow = fuelDetailsRow + 1;
   const signatureEndRow = signatureStartRow + 8;
+  const oficialDirectorRow = findRowContaining(sheet, signatureStartRow, signatureEndRow, ["oficial", "director"]) ??
+    findRowContaining(sheet, signatureStartRow, signatureEndRow, ["ambiental"]) ??
+    35;
   const operacionalRow = findRowContaining(sheet, signatureStartRow, signatureEndRow, ["operacional"]) ?? 36;
   const capitanRow = findRowWhere(sheet, signatureStartRow, signatureEndRow, (value) => {
     const normalized = normalizeText(value);
@@ -245,6 +248,8 @@ const extractBoatReport = (sheet: WorkSheet): ExtractedReportData => {
     capitan_cedula: cellText(sheet, `H${capitanRow}`),
     encargado_mision: cellText(sheet, `C${encargadoRow}`),
     encargado_mision_cedula: cellText(sheet, `H${encargadoRow}`),
+    oficial_director: cellText(sheet, `C${oficialDirectorRow}`),
+    oficial_director_cedula: cellText(sheet, `H${oficialDirectorRow}`),
     operacional: cellText(sheet, `C${operacionalRow}`),
     operacional_cedula: cellText(sheet, `H${operacionalRow}`),
     tripulantes: [],

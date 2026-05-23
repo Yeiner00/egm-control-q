@@ -16,7 +16,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CheckCircle2, ChevronDown, ChevronUp, FileSearch, FileSpreadsheet, Loader2, Trash2, X } from "lucide-react";
+import { ChevronDown, Clock3, FileSearch, Loader2, Route, Waves } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -25,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,10 +34,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import VehicleReportForm, { type VehicleFormData } from "./VehicleReportForm";
 import BoatReportForm, { type BoatFormData, type InspectedBoatData } from "./BoatReportForm";
+import ReportListRow, { type ReportRowMetric } from "./ReportListRow";
 import { calcTotalHours } from "@/lib/report-utils";
 import { normalizeReportNumber, normalizeReportUnit } from "@/lib/reportNumber";
 import { filterReportOptions } from "@/lib/reportSearch";
@@ -56,6 +55,9 @@ import {
 } from "@/lib/reportPeople";
 import { downloadReportExcel } from "@/lib/reportExcelExport";
 import { DEFAULT_REPORT_SITE_OPTIONS, loadSiteOptions, type ReportSiteOption } from "@/lib/reportSites";
+import type { ReportType } from "@/lib/reportPersistence";
+import { buildReportMonthRanges, isDateInReportMonthRanges } from "@/lib/reportMonthFilters";
+import { normalizeReportText, normalizedReportTextOrNull } from "@/lib/reportText";
 
 const REPORT_STATIONS = ["Murcielago"];
 
@@ -90,7 +92,7 @@ type ReportOption = {
 };
 
 type InitialSelection = {
-  tipo: "vehiculo" | "embarcacion";
+  tipo: ReportType;
   reportId: string;
   nonce: number;
 };
@@ -100,7 +102,7 @@ interface ManageReportProps {
 }
 
 const ManageReport = ({ initialSelection }: ManageReportProps) => {
-  const [tipo, setTipo] = useState<"vehiculo" | "embarcacion">("vehiculo");
+  const [tipo, setTipo] = useState<ReportType>("vehiculo");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [monthOpen, setMonthOpen] = useState(false);
@@ -118,6 +120,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
   const [sitios, setSitios] = useState<{ nombre_sitio: string; zona: string; posicion: string }[]>([]);
   const [embarcacionesInspeccionadas, setEmbarcacionesInspeccionadas] = useState<InspectedBoatData[]>([]);
   const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generatingExcelId, setGeneratingExcelId] = useState("");
@@ -130,7 +133,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
 
   const saveMotives = async (
     reportId: string,
-    tipoReporte: "vehiculo" | "embarcacion",
+    tipoReporte: ReportType,
     reportMotives: string[],
   ) => {
     const motivosInsert = buildReportMotiveRows(reportId, tipoReporte, reportMotives);
@@ -380,6 +383,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     const load = async () => {
       try {
         let results: ReportOption[] = [];
+        const monthRanges = buildReportMonthRanges(parseInt(year, 10), selectedMonths);
 
         if (tipo === "vehiculo") {
           let q = supabase
@@ -393,8 +397,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           results = (data || [])
             .filter((d) => {
               if (selectedMonths.length === 0 || !d.fecha) return true;
-              const month = new Date(d.fecha).getMonth() + 1;
-              return selectedMonths.includes(String(month));
+              return isDateInReportMonthRanges(d.fecha, monthRanges);
             })
             .map((d) => ({ id: d.id, no_reporte: d.no_reporte, fecha: d.fecha, unidad: d.vehiculo }));
         } else {
@@ -409,8 +412,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           results = (data || [])
             .filter((d) => {
               if (selectedMonths.length === 0 || !d.fecha) return true;
-              const month = new Date(d.fecha).getMonth() + 1;
-              return selectedMonths.includes(String(month));
+              return isDateInReportMonthRanges(d.fecha, monthRanges);
             })
             .map((d) => ({ id: d.id, no_reporte: d.no_reporte, fecha: d.fecha, unidad: d.embarcacion }));
         }
@@ -558,6 +560,9 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
       const boatPreview = preview as BoatReport;
       const capitanPerson = personas.find((p) => p.roles.includes("capitan"));
       const encargadoPerson = personas.find((p) => p.roles.includes("encargado_mision"));
+      const oficialDirectorPerson = personas.find((p) =>
+        p.roles.some((role) => ["oficial_director", "oficial_director_ambiental", "oficial_ambiental", "oficial"].includes(role)),
+      ) ?? encargadoPerson;
       const operacionalPerson = personas.find((p) => p.roles.includes("operacional"));
       const capitan = capitanPerson?.nombre || "";
       const encargado = encargadoPerson?.nombre || "";
@@ -587,6 +592,8 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         capitan_cedula: capitanPerson?.cedula || "",
         encargado_mision: encargado,
         encargado_mision_cedula: encargadoPerson?.cedula || "",
+        oficial_director: oficialDirectorPerson?.nombre || "",
+        oficial_director_cedula: oficialDirectorPerson?.cedula || "",
         operacional: operacionalPerson?.nombre || "",
         operacional_cedula: operacionalPerson?.cedula || "",
         tripulantes,
@@ -695,11 +702,11 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
             hora_salida: vehicleData.hora_salida || null,
             hora_regreso: vehicleData.hora_regreso || null,
             total_horas: totalHoras,
-            estacion: vehicleData.estacion || null,
+            estacion: normalizedReportTextOrNull(vehicleData.estacion),
             vehiculo: vehicleData.vehiculo || null,
-            destino: vehicleData.destino || null,
-            estacion_combustible: vehicleData.estacion_combustible || null,
-            lugar_combustible: vehicleData.lugar_combustible || null,
+            destino: normalizedReportTextOrNull(vehicleData.destino),
+            estacion_combustible: normalizedReportTextOrNull(vehicleData.estacion_combustible),
+            lugar_combustible: normalizedReportTextOrNull(vehicleData.lugar_combustible),
             cedula_juridica_combustible: vehicleData.cedula_juridica_combustible || null,
             no_factura: vehicleData.no_factura || null,
             combustible_trasegado_bomba: vehicleData.combustible_trasegado_bomba,
@@ -727,18 +734,19 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         await saveMotives(selectedId, "vehiculo", vehicleData.motivos);
 
         const sitiosInsert = vehicleData.sitios_visitados
-          .filter((s) => s.nombre_sitio)
           .map((s) => ({
             reporte_id: selectedId,
-            nombre_sitio: s.nombre_sitio,
+            nombre_sitio: normalizeReportText(s.nombre_sitio),
             zona: s.zona || null,
             posicion: s.posicion || null,
-          }));
+          }))
+          .filter((s) => s.nombre_sitio);
         if (sitiosInsert.length > 0) await supabase.from("reporte_sitios").insert(sitiosInsert);
       } else if (tipo === "embarcacion" && boatData) {
         const horasNavegadas = calcTotalHours(boatData.hora_salida, boatData.hora_regreso);
         const totalTripulantes = countUniqueNormalizedNames([
           boatData.capitan,
+          boatData.encargado_mision,
           ...boatData.tripulantes.map((person) => person.nombre),
         ].filter(Boolean));
         const horasHombre = horasNavegadas != null ? horasNavegadas * totalTripulantes : null;
@@ -751,7 +759,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
             fecha: boatData.fecha || null,
             bitacora: boatData.bitacora || null,
             folios: boatData.folios || null,
-            estacion: boatData.estacion || null,
+            estacion: normalizedReportTextOrNull(boatData.estacion),
             embarcacion: boatData.embarcacion || null,
             no_cierre_os: boatData.no_cierre_os || null,
             hora_salida: boatData.hora_salida || null,
@@ -761,16 +769,16 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
             horas_motor_centro: boatData.horas_motor_centro,
             horas_motor_estribor: boatData.horas_motor_estribor,
             horas_hombre: horasHombre,
-            destino: boatData.destino || null,
+            destino: normalizedReportTextOrNull(boatData.destino),
             saldo_anterior: boatData.saldo_anterior,
             combustible_trasegado_bodega: boatData.combustible_trasegado_bodega,
             total_antes_viaje: boatData.total_antes_viaje,
             combustible_trasegado_durante: boatData.combustible_trasegado_durante,
             combustible_gastado: boatData.combustible_gastado,
             saldo_despues: boatData.saldo_despues,
-            tipo_combustible: boatData.tipo_combustible || null,
-            estacion_combustible: boatData.estacion_combustible || null,
-            lugar_combustible: boatData.lugar_combustible || null,
+            tipo_combustible: normalizedReportTextOrNull(boatData.tipo_combustible),
+            estacion_combustible: normalizedReportTextOrNull(boatData.estacion_combustible),
+            lugar_combustible: normalizedReportTextOrNull(boatData.lugar_combustible),
             cedula_juridica_combustible: boatData.cedula_juridica_combustible || null,
             no_factura: boatData.no_factura || null,
             millas_nauticas: boatData.millas_nauticas,
@@ -786,12 +794,15 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           ...(boatData.encargado_mision
             ? [{ nombre: normalizeName(boatData.encargado_mision), cedula: boatData.encargado_mision_cedula || null, roles: ["encargado_mision"] }]
             : []),
+          ...(boatData.oficial_director
+            ? [{ nombre: normalizeName(boatData.oficial_director), cedula: boatData.oficial_director_cedula || null, roles: ["oficial_director"] }]
+            : []),
           ...(boatData.operacional
             ? [{ nombre: normalizeName(boatData.operacional), cedula: boatData.operacional_cedula || null, roles: ["operacional"] }]
             : []),
           ...boatData.tripulantes
             .filter((person) => person.nombre)
-            .map((person) => ({ nombre: normalizeName(person.nombre), roles: ["tripulante"] })),
+            .map((person) => ({ nombre: normalizeName(person.nombre), cedula: person.cedula || null, roles: ["tripulante"] })),
           ...boatData.personas_particulares
             .filter(Boolean)
             .map((name) => ({ nombre: normalizeName(name), roles: ["particular"] })),
@@ -800,13 +811,13 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         await saveMotives(selectedId, "embarcacion", boatData.motivos);
 
         const sitiosInsert = boatData.sitios_visitados
-          .filter((s) => s.nombre_sitio)
           .map((s) => ({
             reporte_id: selectedId,
-            nombre_sitio: s.nombre_sitio,
+            nombre_sitio: normalizeReportText(s.nombre_sitio),
             zona: s.zona || null,
             posicion: s.posicion || null,
-          }));
+          }))
+          .filter((s) => s.nombre_sitio);
         if (sitiosInsert.length > 0) await supabase.from("reporte_sitios").insert(sitiosInsert);
 
         const inspectedInsert = boatData.embarcaciones_inspeccionadas
@@ -854,6 +865,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
       setEditing(false);
       setReportNumbers((prev) => prev.filter((r) => r.id !== selectedId));
       setSelectedReportIds((prev) => prev.filter((id) => id !== selectedId));
+      setDeleteDialogOpen(false);
     } catch {
       toast.error("Error al eliminar el reporte");
     } finally {
@@ -883,6 +895,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
     setVehicleData(null);
     setBoatData(null);
     setEditing(false);
+    setDeleteDialogOpen(false);
   };
 
   return (
@@ -1049,160 +1062,126 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
                   {selectedReports.map((report) => {
                     const isOpen = selectedId === report.id;
                     const isReady = isOpen && preview?.id === report.id && editing;
+                    const reportPreview = isOpen && preview?.id === report.id ? preview : null;
+                    const rowMetrics: ReportRowMetric[] = [];
+
+                    if (reportPreview && tipo === "vehiculo") {
+                      const vehiclePreview = reportPreview as VehicleReport;
+                      if (vehiclePreview.kilometros_recorridos != null) {
+                        rowMetrics.push({
+                          label: "Kilometros",
+                          value: `${vehiclePreview.kilometros_recorridos} km`,
+                          icon: Route,
+                        });
+                      }
+                      if (vehiclePreview.total_horas != null) {
+                        rowMetrics.push({
+                          label: "Horas",
+                          value: `${vehiclePreview.total_horas} h`,
+                          icon: Clock3,
+                        });
+                      }
+                    }
+
+                    if (reportPreview && tipo === "embarcacion") {
+                      const boatPreview = reportPreview as BoatReport;
+                      if (boatPreview.millas_nauticas != null) {
+                        rowMetrics.push({
+                          label: "Millas",
+                          value: `${boatPreview.millas_nauticas} mn`,
+                          icon: Waves,
+                        });
+                      }
+                      if (boatPreview.horas_navegadas != null) {
+                        rowMetrics.push({
+                          label: "Horas",
+                          value: `${boatPreview.horas_navegadas} h`,
+                          icon: Clock3,
+                        });
+                      }
+                    }
+
+                    const openReport = () => {
+                      setSelectedId(report.id);
+                      setEditing(false);
+                    };
 
                     return (
-                      <Collapsible
+                      <ReportListRow
                         key={report.id}
-                        open={isOpen}
-                        onOpenChange={(open) => {
+                        origin="gestion"
+                        type={tipo}
+                        reportNumber={report.no_reporte}
+                        date={report.fecha}
+                        unit={report.unidad}
+                        station={reportPreview?.estacion}
+                        role={tipo === "vehiculo" && isOpen && vehicleData?.chofer
+                          ? "Chofer"
+                          : tipo === "embarcacion" && isOpen && boatData?.capitan
+                            ? "Capitan"
+                            : undefined}
+                        metrics={rowMetrics}
+                        tags={isOpen ? motivos : []}
+                        status={isOpen && !isReady ? "processing" : "ready"}
+                        statusText={isOpen && !isReady ? "Cargando datos" : undefined}
+                        expanded={isOpen}
+                        expandable
+                        onExpandedChange={(open) => {
                           if (open) {
-                            setSelectedId(report.id);
-                            setEditing(false);
+                            openReport();
                           } else if (isOpen) {
                             clearSelection();
                           }
                         }}
+                        onGenerateExcel={() => handleGenerateExcel(report.id)}
+                        generatingExcel={generatingExcelId === report.id}
+                        onEdit={isOpen ? undefined : openReport}
+                        editing={isOpen && !isReady}
+                        onRemove={() => {
+                          setSelectedReportIds((prev) => prev.filter((id) => id !== report.id));
+                          if (selectedId === report.id) clearSelection();
+                        }}
+                        removeLabel={`Quitar reporte ${report.no_reporte}`}
                       >
-                        <div className="deferred-report-region rounded-[calc(var(--radius)-0.08rem)] border border-border/80 bg-card/70">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex w-full items-center justify-between gap-3 rounded-[calc(var(--radius)-0.08rem)] p-3 text-left text-sm hover:bg-muted/40">
-                              <div className="flex min-w-0 items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
-                                <div className="min-w-0">
-                                  <div className="truncate font-medium text-foreground">
-                                    Reporte #{report.no_reporte}
-                                  </div>
-                                  <div className="truncate text-xs text-muted-foreground">
-                                    {[report.unidad, report.fecha].filter(Boolean).join(" - ") || "Sin detalle"}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex shrink-0 items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                  {tipo === "vehiculo" ? "Vehiculo" : "Embarcacion"}
-                                </Badge>
-                                <Badge variant="secondary" className="text-xs">#{report.no_reporte}</Badge>
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  aria-label={`Generar Excel del reporte ${report.no_reporte}`}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-[calc(var(--radius)-0.16rem)] text-muted-foreground transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    handleGenerateExcel(report.id);
-                                  }}
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter" || event.key === " ") {
-                                      event.preventDefault();
-                                      event.stopPropagation();
-                                      handleGenerateExcel(report.id);
-                                    }
-                                  }}
-                                >
-                                  {generatingExcelId === report.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <FileSpreadsheet className="h-4 w-4" />
-                                  )}
-                                </span>
-                                <span
-                                  role="button"
-                                  tabIndex={0}
-                                  aria-label={`Quitar reporte ${report.no_reporte}`}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-[calc(var(--radius)-0.16rem)] text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    setSelectedReportIds((prev) => prev.filter((id) => id !== report.id));
-                                    if (selectedId === report.id) clearSelection();
-                                  }}
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter" || event.key === " ") {
-                                      event.preventDefault();
-                                      event.stopPropagation();
-                                      setSelectedReportIds((prev) => prev.filter((id) => id !== report.id));
-                                      if (selectedId === report.id) clearSelection();
-                                    }
-                                  }}
-                                >
-                                  <X className="h-4 w-4" />
-                                </span>
-                                {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              </div>
-                            </button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="px-3 pb-3">
-                            {!isReady && (
-                              <div className="panel-subtle flex items-center gap-2 p-4 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                Cargando datos del reporte...
-                              </div>
-                            )}
-                            {isReady && tipo === "vehiculo" && vehicleData && (
-                              <VehicleReportForm
-                                data={vehicleData}
-                                onChange={setVehicleData}
-                                onSave={saveEdit}
-                                onCancel={clearSelection}
-                                saving={saving}
-                                stationOptions={REPORT_STATIONS}
-                                unitOptions={unidades}
-                                peopleOptions={peopleOptions}
-                                motiveOptions={motiveOptions}
-                                siteOptions={siteOptions}
-                              />
-                            )}
-                            {isReady && tipo === "embarcacion" && boatData && (
-                              <BoatReportForm
-                                data={boatData}
-                                onChange={setBoatData}
-                                onSave={saveEdit}
-                                onCancel={clearSelection}
-                                saving={saving}
-                                stationOptions={REPORT_STATIONS}
-                                unitOptions={unidades}
-                                peopleOptions={peopleOptions}
-                                motiveOptions={motiveOptions}
-                                siteOptions={siteOptions}
-                              />
-                            )}
-                            {isReady && (
-                              <div className="mt-3 flex justify-end">
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm" disabled={deleting}>
-                                      {deleting ? (
-                                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="mr-1 h-4 w-4" />
-                                      )}
-                                      Eliminar reporte
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        ¿Está seguro que desea eliminar este reporte? Esta acción no se puede deshacer.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={handleDelete}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Eliminar
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            )}
-                          </CollapsibleContent>
-                        </div>
-                      </Collapsible>
+                        {!isReady && (
+                          <div className="panel-subtle flex items-center gap-2 p-4 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            Cargando datos del reporte...
+                          </div>
+                        )}
+                        {isReady && tipo === "vehiculo" && vehicleData && (
+                          <VehicleReportForm
+                            data={vehicleData}
+                            onChange={setVehicleData}
+                            onSave={saveEdit}
+                            onCancel={clearSelection}
+                            saving={saving}
+                            stationOptions={REPORT_STATIONS}
+                            unitOptions={unidades}
+                            peopleOptions={peopleOptions}
+                            motiveOptions={motiveOptions}
+                            siteOptions={siteOptions}
+                            onDelete={() => setDeleteDialogOpen(true)}
+                            deleting={deleting}
+                          />
+                        )}
+                        {isReady && tipo === "embarcacion" && boatData && (
+                          <BoatReportForm
+                            data={boatData}
+                            onChange={setBoatData}
+                            onSave={saveEdit}
+                            onCancel={clearSelection}
+                            saving={saving}
+                            stationOptions={REPORT_STATIONS}
+                            unitOptions={unidades}
+                            peopleOptions={peopleOptions}
+                            motiveOptions={motiveOptions}
+                            siteOptions={siteOptions}
+                            onDelete={() => setDeleteDialogOpen(true)}
+                            deleting={deleting}
+                          />
+                        )}
+                      </ReportListRow>
                     );
                   })}
                 </div>
@@ -1216,6 +1195,25 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           </div>
         </div>
       </Card>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar reporte</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta accion no se puede deshacer. El reporte y sus datos relacionados seran eliminados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

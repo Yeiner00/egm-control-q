@@ -1,8 +1,10 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { findOfficerByName } from "@/lib/officers";
 import { calcTotalHours } from "@/lib/report-utils";
 import { loadReportPeopleByIds, type ReportPersonWithRoles } from "@/lib/reportPeople";
+import { DEFAULT_REPORT_SITE_OPTIONS, findSiteOption } from "@/lib/reportSites";
 
 type ReportType = "vehiculo" | "embarcacion";
 type VehicleReport = Tables<"reportes_vehiculo">;
@@ -81,8 +83,25 @@ export const excelTimeFraction = (time: string | null | undefined) => {
 export const excelHoursFraction = (hours: number | null | undefined) =>
   typeof hours === "number" && Number.isFinite(hours) ? hours / 24 : null;
 
-export const joinReportValues = (values: Array<string | null | undefined>) =>
-  values.map((value) => value?.trim()).filter(Boolean).join(", ");
+const normalizeJoinValueKey = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const joinReportValues = (values: Array<string | null | undefined>) => {
+  const seen = new Set<string>();
+  return values.reduce<string[]>((items, value) => {
+    const cleanValue = value?.trim();
+    if (!cleanValue) return items;
+    const key = normalizeJoinValueKey(cleanValue);
+    if (!key || seen.has(key)) return items;
+    seen.add(key);
+    return [...items, cleanValue];
+  }, []).join(", ");
+};
 
 export const sanitizeExcelFileName = (value: string) =>
   value.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
@@ -116,6 +135,19 @@ const toOptionalNumber = (value: string | number | null | undefined) => {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+};
+
+const knownPersonCedula = (person: ReportPersonWithRoles | undefined) =>
+  person ? findOfficerByName(person.nombre)?.identificacion || person.cedula : null;
+
+const siteZona = (site: SitioRecord | undefined) => {
+  if (!site) return "";
+  return site.zona || findSiteOption(DEFAULT_REPORT_SITE_OPTIONS, site.nombre_sitio)?.zona || "";
+};
+
+const sitePosition = (site: SitioRecord | undefined) => {
+  if (!site) return "";
+  return site.posicion || findSiteOption(DEFAULT_REPORT_SITE_OPTIONS, site.nombre_sitio)?.posicion || "";
 };
 
 const peopleByRole = (people: ReportPersonWithRoles[], roleNames: string[]) => {
@@ -293,9 +325,9 @@ const buildVehiclePatches = ({ report, people, motivos, sitios }: ReportExcelDat
       const row = 9 + index;
       const site = sitios[index];
       return [
-        [`H${row}`, site?.zona || ""],
+        [`H${row}`, siteZona(site)],
         [`I${row}`, site?.nombre_sitio || ""],
-        [`L${row}`, site?.posicion || ""],
+        [`L${row}`, sitePosition(site)],
       ];
     }).flat(),
   );
@@ -330,18 +362,20 @@ const buildVehiclePatches = ({ report, people, motivos, sitios }: ReportExcelDat
       F24: report.saldo_combustible_despues_viaje,
       I24: report.kilometros_recorridos,
       L23: toOptionalNumber(report.no_factura),
-      L25: toOptionalNumber(choferPerson?.cedula),
-      L26: toOptionalNumber(oficialPerson?.cedula),
+      L25: toOptionalNumber(knownPersonCedula(choferPerson)),
+      L26: toOptionalNumber(knownPersonCedula(oficialPerson)),
     },
   };
 };
 
-const buildBoatPatches = ({ report, people, motivos, sitios, inspectedBoats }: ReportExcelData<BoatReport>) => {
+export const buildBoatPatches = ({ report, people, motivos, sitios, inspectedBoats }: ReportExcelData<BoatReport>) => {
   const capitanPerson = firstPersonByRole(people, ["capitan"]);
   const encargadoPerson = firstPersonByRole(people, ["encargado_mision"]);
+  const oficialDirectorPerson = firstPersonByRole(people, ["oficial_director", "oficial_director_ambiental", "oficial_ambiental", "oficial"]) ?? encargadoPerson;
   const operacionalPerson = firstPersonByRole(people, ["operacional"]);
   const capitan = capitanPerson?.nombre || "";
   const encargado = encargadoPerson?.nombre || "";
+  const oficialDirector = oficialDirectorPerson?.nombre || "";
   const operacional = operacionalPerson?.nombre || "";
   const tripulantes = peopleByRole(people, ["tripulante"]);
   const particulares = peopleByRole(people, ["particular", "persona_particular"]);
@@ -352,8 +386,8 @@ const buildBoatPatches = ({ report, people, motivos, sitios, inspectedBoats }: R
       const site = sitios[index];
       return [
         [`F${row}`, site?.nombre_sitio || ""],
-        [`G${row}`, site?.zona || ""],
-        [`H${row}`, site?.posicion || ""],
+        [`G${row}`, siteZona(site)],
+        [`H${row}`, sitePosition(site)],
       ];
     }).flat(),
   );
@@ -389,10 +423,10 @@ const buildBoatPatches = ({ report, people, motivos, sitios, inspectedBoats }: R
       B33: report.estacion_combustible || "",
       C33: report.cedula_juridica_combustible || "",
       D33: report.lugar_combustible || "",
-      C35: encargado,
+      C35: oficialDirector,
       C36: operacional,
       C37: capitan,
-      C38: tripulantes[0] || "",
+      C38: encargado,
       I31: report.tipo_combustible || "",
       ...sitePatches,
       ...inspectedBoatPatches,
@@ -412,10 +446,10 @@ const buildBoatPatches = ({ report, people, motivos, sitios, inspectedBoats }: R
       H31: report.saldo_despues,
       H33: report.millas_nauticas,
       F33: toOptionalNumber(report.no_factura),
-      H35: toOptionalNumber(encargadoPerson?.cedula),
-      H36: toOptionalNumber(operacionalPerson?.cedula),
-      H37: toOptionalNumber(capitanPerson?.cedula),
-      H38: null,
+      H35: toOptionalNumber(knownPersonCedula(oficialDirectorPerson)),
+      H36: toOptionalNumber(knownPersonCedula(operacionalPerson)),
+      H37: toOptionalNumber(knownPersonCedula(capitanPerson)),
+      H38: toOptionalNumber(knownPersonCedula(encargadoPerson)),
     },
   };
 };

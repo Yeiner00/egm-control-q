@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { strFromU8, unzipSync } from "fflate";
 import {
+  buildBoatPatches,
   buildBoatExcelFileName,
   buildReportConsecutive,
   buildVehicleExcelFileName,
@@ -36,6 +37,10 @@ describe("report Excel formatting helpers", () => {
     expect(joinReportValues(["A", "", undefined, "B"])).toBe("A, B");
   });
 
+  it("deduplicates joined report values while preserving order", () => {
+    expect(joinReportValues(["Jorge Gonzalez", "Randall Mena", "Jorge Gonzalez"])).toBe("Jorge Gonzalez, Randall Mena");
+  });
+
   it("builds vehicle Excel file names with the stored report number and driver", () => {
     expect(buildVehicleExcelFileName("0822", "Minor Cambronero Campos")).toBe(
       "Reporte de viaje # 0822 Minor Cambronero Campos.xlsx",
@@ -60,6 +65,102 @@ describe("report Excel formatting helpers", () => {
 
   it("builds boat Excel file names without a captain fallback", () => {
     expect(buildBoatExcelFileName("010", "")).toBe("Reporte de viaje # 010.xlsx");
+  });
+});
+
+describe("boat report Excel patches", () => {
+  it("keeps multiple roles on one person without duplicating crew names or shifting signatures", () => {
+    const patches = buildBoatPatches({
+      report: {
+        no_reporte: "017",
+        anio: 2026,
+        estacion: "Murcielago",
+        embarcacion: "GC38-22",
+        bitacora: "01",
+        folios: "1-2",
+        no_cierre_os: "",
+        fecha: "2026-05-21",
+        hora_salida: "06:00",
+        hora_regreso: "09:00",
+        horas_navegadas: null,
+        horas_motor_babor: null,
+        horas_motor_centro: null,
+        horas_motor_estribor: null,
+        destino: "Sector norte",
+        novedades: "",
+        tipo_combustible: "",
+        saldo_anterior: null,
+        combustible_trasegado_bodega: null,
+        total_antes_viaje: null,
+        combustible_trasegado_durante: null,
+        combustible_gastado: null,
+        saldo_despues: null,
+        estacion_combustible: "",
+        lugar_combustible: "",
+        cedula_juridica_combustible: "",
+        no_factura: "",
+        millas_nauticas: null,
+      } as Parameters<typeof buildBoatPatches>[0]["report"],
+      people: [
+        {
+          id: "1",
+          reporte_id: "boat-1",
+          tipo_reporte: "embarcacion",
+          nombre: "Jorge Gonzalez Barrantes",
+          nombre_normalizado: "jorge gonzalez barrantes",
+          cedula: "501010643",
+          roles: ["capitan", "tripulante"],
+        },
+        {
+          id: "2",
+          reporte_id: "boat-1",
+          tipo_reporte: "embarcacion",
+          nombre: "Randall Mena Villavicencio",
+          nombre_normalizado: "randall mena villavicencio",
+          cedula: "205200912",
+          roles: ["encargado_mision", "oficial_director", "tripulante"],
+        },
+        {
+          id: "3",
+          reporte_id: "boat-1",
+          tipo_reporte: "embarcacion",
+          nombre: "Michael Rojas Brenes",
+          nombre_normalizado: "michael rojas brenes",
+          cedula: "603310561",
+          roles: ["operacional"],
+        },
+        {
+          id: "4",
+          reporte_id: "boat-1",
+          tipo_reporte: "embarcacion",
+          nombre: "Joel Mora Estrada",
+          nombre_normalizado: "joel mora estrada",
+          cedula: null,
+          roles: ["tripulante"],
+        },
+      ],
+      motivos: [],
+      sitios: [
+        {
+          nombre_sitio: "Manzanillo",
+          zona: "",
+          posicion: "",
+        },
+      ] as Parameters<typeof buildBoatPatches>[0]["sitios"],
+      inspectedBoats: [],
+    });
+
+    expect(patches.text.C9).toBe("Jorge Gonzalez Barrantes, Randall Mena Villavicencio, Joel Mora Estrada");
+    expect(patches.text.F15).toBe("Manzanillo");
+    expect(patches.text.G15).toBe("1B");
+    expect(patches.text.H15).toBe("11\u00B001'28.31\" N / 085\u00B043'57.52\" W");
+    expect(patches.text.C35).toBe("Randall Mena Villavicencio");
+    expect(patches.text.C36).toBe("Michael Rojas Brenes");
+    expect(patches.text.C37).toBe("Jorge Gonzalez Barrantes");
+    expect(patches.text.C38).toBe("Randall Mena Villavicencio");
+    expect(patches.numbers.H35).toBe(205200912);
+    expect(patches.numbers.H37).toBe(603100467);
+    expect(patches.numbers.H38).toBe(205200912);
   });
 });
 

@@ -107,7 +107,7 @@ const RESOURCE_ROWS = [10, 11, 12, 13, 14, 15, 16, 17, 18];
 const HUMAN_HOURS_ROW = 24;
 const PATROL_ROWS = [44, 46, 52, 53];
 const VEHICLE_HUMAN_HOURS_ROLES = new Set(["chofer", "acompanante", "acompaa_ante"]);
-const BOAT_HUMAN_HOURS_ROLES = new Set(["capitan", "tripulante"]);
+const BOAT_HUMAN_HOURS_ROLES = new Set(["capitan", "encargado_mision", "tripulante"]);
 const MOTIVE_ROW_BY_KEY: Record<string, number> = {
   "reafirmacion de soberania": 77,
   "control de narcotrafico": 78,
