@@ -156,7 +156,6 @@ export const mapToBoatFormData = (data: ExtractedReportData): BoatFormData => ({
         matricula: (record.matricula as string) || "",
         no_inspeccion: (record.no_inspeccion as string) || "",
         zona: (record.zona as string) || "",
-        posicion: (record.posicion as string) || "",
       };
     })
     : [],

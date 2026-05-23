@@ -173,6 +173,26 @@ describe("BoatReportForm", () => {
     expect(destino.compareDocumentPosition(sitios) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("does not ask for position on inspected boats", () => {
+    renderBoatForm({
+      data: {
+        ...baseData,
+        embarcaciones_inspeccionadas: [{
+          nombre: "Pesquera Uno",
+          matricula: "P-001",
+          no_inspeccion: "INS-7",
+          zona: "3C",
+        }],
+      },
+    });
+
+    const section = screen.getByText("Embarcaciones inspeccionadas").closest("section");
+
+    expect(section).not.toBeNull();
+    expect(within(section as HTMLElement).queryByText("Posicion")).not.toBeInTheDocument();
+    expect(within(section as HTMLElement).queryByPlaceholderText("Posicion")).not.toBeInTheDocument();
+  });
+
   it("calculates motor hours in manual mode and leaves hora salida empty when provided empty", () => {
     renderBoatForm({
       data: {

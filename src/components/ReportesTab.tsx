@@ -227,6 +227,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
   const [manualSaving, setManualSaving] = useState(false);
   const [manualGenerating, setManualGenerating] = useState(false);
   const [manualSavedReport, setManualSavedReport] = useState<{ tipo: ReportType; reportId: string } | null>(null);
+  const [manualSavedDialogOpen, setManualSavedDialogOpen] = useState(false);
   const [manualShowPendingState, setManualShowPendingState] = useState(false);
   const [manualPendingFields, setManualPendingFields] = useState<string[]>([]);
   const [manualPendingDialogOpen, setManualPendingDialogOpen] = useState(false);
@@ -435,7 +436,9 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
     setManualVehicleData(buildManualVehicleDefaults());
     setManualBoatData(buildManualBoatDefaults());
     setManualType(null);
+    setManualGenerating(false);
     setManualSavedReport(null);
+    setManualSavedDialogOpen(false);
     setManualShowPendingState(false);
     setManualPendingFields([]);
     setManualPendingDialogOpen(false);
@@ -446,6 +449,12 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
   const saveManualReport = async () => {
     if (!manualType) {
       toast.error("Seleccione el tipo de reporte");
+      return;
+    }
+
+    const identityMissingFields = getManualIdentityMissingFields();
+    if (identityMissingFields.length > 0) {
+      showManualIdentityError(identityMissingFields);
       return;
     }
 
@@ -461,7 +470,35 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
     }
 
     setManualSavedReport({ tipo: manualType, reportId: result.reportId });
+    setManualSavedDialogOpen(true);
     toast.success("Reporte guardado correctamente");
+  };
+
+  const getManualIdentityMissingFields = () => {
+    if (manualType === "vehiculo") {
+      const missing: string[] = [];
+      addMissing(missing, "N. Reporte", manualVehicleData.no_reporte);
+      addMissing(missing, "Fecha", manualVehicleData.fecha);
+      addMissing(missing, "Vehiculo", manualVehicleData.vehiculo);
+      return missing;
+    }
+
+    if (manualType === "embarcacion") {
+      const missing: string[] = [];
+      addMissing(missing, "N. Reporte", manualBoatData.no_reporte);
+      addMissing(missing, "Fecha", manualBoatData.fecha);
+      addMissing(missing, "Embarcacion", manualBoatData.embarcacion);
+      return missing;
+    }
+
+    return [];
+  };
+
+  const showManualIdentityError = (missingFields: string[]) => {
+    setManualShowPendingState(true);
+    toast.error("Complete los datos clave del reporte", {
+      description: missingFields.join(", "),
+    });
   };
 
   const getManualMissingFields = () => {
@@ -477,6 +514,12 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
   const reviewManualReport = async () => {
     if (!manualType) {
       toast.error("Seleccione el tipo de reporte");
+      return;
+    }
+
+    const identityMissingFields = getManualIdentityMissingFields();
+    if (identityMissingFields.length > 0) {
+      showManualIdentityError(identityMissingFields);
       return;
     }
 
@@ -497,15 +540,32 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
   };
 
   const generateManualExcel = async () => {
-    if (!manualSavedReport) return;
+    if (!manualSavedReport) return false;
     setManualGenerating(true);
     try {
       await downloadReportExcel(manualSavedReport.tipo, manualSavedReport.reportId);
       toast.success("Excel generado correctamente");
+      return true;
     } catch {
       toast.error("No se pudo generar el Excel");
+      return false;
     } finally {
       setManualGenerating(false);
+    }
+  };
+
+  const generateManualExcelAndClose = async () => {
+    const generated = await generateManualExcel();
+    if (generated) {
+      resetManualForm();
+    }
+  };
+
+  const handleManualSavedDialogOpenChange = (open: boolean) => {
+    if (!open && manualGenerating) return;
+    setManualSavedDialogOpen(open);
+    if (!open) {
+      resetManualForm();
     }
   };
 
@@ -521,6 +581,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
     }
     setManualType(type);
     setManualSavedReport(null);
+    setManualSavedDialogOpen(false);
     setManualShowPendingState(false);
     setManualPendingFields([]);
     setManualPendingDialogOpen(false);
@@ -584,29 +645,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
     </div>
   );
 
-  const manualForm = manualSavedReport ? (
-    <Card className="space-y-4 p-5 sm:p-6 lg:p-4">
-      <div className="flex items-start gap-3">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
-        <div>
-          <h3 className="font-semibold text-foreground">Reporte guardado correctamente</h3>
-          <p className="section-copy">
-            Puede descargar el Excel con los datos guardados o limpiar el formulario para agregar otro reporte.
-          </p>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button onClick={generateManualExcel} disabled={manualGenerating} size="sm">
-          {manualGenerating ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-1 h-4 w-4" />}
-          Generar Excel
-        </Button>
-        <Button variant="outline" onClick={resetManualForm} size="sm">
-          <FilePlus2 className="mr-1 h-4 w-4" />
-          Agregar otro reporte
-        </Button>
-      </div>
-    </Card>
-  ) : manualType === "vehiculo" ? (
+  const manualForm = manualSavedReport ? null : manualType === "vehiculo" ? (
     <VehicleReportForm
       data={manualVehicleData}
       onChange={setManualVehicleData}
@@ -668,6 +707,29 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
         <AlertDialogFooter>
           <AlertDialogCancel>Editar</AlertDialogCancel>
           <AlertDialogAction onClick={confirmSaveWithMissingFields}>Si, guardar</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  const manualSavedDialog = (
+    <AlertDialog open={manualSavedDialogOpen && Boolean(manualSavedReport)} onOpenChange={handleManualSavedDialogOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-[calc(var(--radius)-0.16rem)] bg-primary/10 text-primary sm:mx-0">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+          <AlertDialogTitle>Reporte guardado correctamente</AlertDialogTitle>
+          <AlertDialogDescription>
+            Puede generar el Excel de este reporte ahora o cerrar este dialogo.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={manualGenerating}>Cerrar</AlertDialogCancel>
+          <Button onClick={generateManualExcelAndClose} disabled={manualGenerating}>
+            {manualGenerating ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-1 h-4 w-4" />}
+            Generar Excel
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -778,6 +840,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
               </Card>
               {manualForm}
               {manualPendingDialog}
+              {manualSavedDialog}
             </TabsContent>
             <TabsContent value="gestionar">
               <ManageReport initialSelection={manageInitialSelection} />

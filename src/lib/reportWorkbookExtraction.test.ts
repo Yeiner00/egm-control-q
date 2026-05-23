@@ -95,7 +95,7 @@ describe("extractReportFromWorkbook", () => {
       { nombre_sitio: "BAHIA SALINAS", zona: "3A", posicion: "11 03 50 N / 085 41 33 W" },
     ]);
     expect(data?.embarcaciones_inspeccionadas).toEqual([
-      { nombre: "ALOHA", matricula: "GPC-7080", no_inspeccion: "ABORDAJE", zona: "3C", posicion: "" },
+      { nombre: "ALOHA", matricula: "GPC-7080", no_inspeccion: "ABORDAJE", zona: "3C" },
     ]);
     expect(data?.saldo_despues).toBe(330);
     expect(data?.millas_nauticas).toBe(21);
@@ -148,7 +148,7 @@ describe("extractReportFromWorkbook", () => {
 
     expect(data?.personas_particulares).toEqual(["Ana Mora", "Luis Solis"]);
     expect(data?.embarcaciones_inspeccionadas).toEqual([
-      { nombre: "POSEIDON", matricula: "P-123", no_inspeccion: "VISUAL", zona: "3A", posicion: "" },
+      { nombre: "POSEIDON", matricula: "P-123", no_inspeccion: "VISUAL", zona: "3A" },
     ]);
     expect(data?.saldo_despues).toBe(280);
     expect(data?.millas_nauticas).toBe(7);

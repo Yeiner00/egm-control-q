@@ -42,15 +42,46 @@ export interface SavedReportEditorData {
   boatData?: BoatFormData;
 }
 
+const parseReportYear = (date: string | null | undefined) => {
+  const value = String(date ?? "").trim();
+  if (!value) return null;
+
+  const year = Number.parseInt(value.split("-")[0], 10);
+  return Number.isFinite(year) ? year : null;
+};
+
 const isMotivesSchemaError = (message: string) =>
   message.includes("motivo_original") ||
   message.includes("motivo_key") ||
   message.includes("Could not find");
 
+const VEHICLE_DRIVER_ROLES = new Set(["chofer"]);
+const VEHICLE_OFFICIAL_ROLES = new Set(["oficial"]);
+const VEHICLE_COMPANION_ROLES = new Set(["acompanante"]);
+const BOAT_CAPTAIN_ROLES = new Set(["capitan"]);
+const BOAT_MISSION_LEAD_ROLES = new Set(["encargado_mision"]);
 const BOAT_OFFICIAL_DIRECTOR_ROLES = new Set(["oficial_director", "oficial_director_ambiental", "oficial_ambiental", "oficial"]);
+const BOAT_OPERATIONAL_ROLES = new Set(["operacional"]);
+const BOAT_CREW_ROLES = new Set(["tripulante"]);
+const BOAT_PRIVATE_PERSON_ROLES = new Set(["particular", "persona_particular"]);
+
+const normalizeReportRole = (role: string) => {
+  const normalized = role
+    .trim()
+    .toLowerCase()
+    .replace(/\u00c3\u00b1/g, "\u00f1")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_")
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+
+  return normalized === "acompaa_ante" ? "acompanante" : normalized;
+};
 
 const hasAnyRole = (person: ReportPersonWithRoles, roles: Set<string>) =>
-  person.roles.some((role) => roles.has(role));
+  person.roles.some((role) => roles.has(normalizeReportRole(role)));
 
 const knownCedulaFor = (name: string | null | undefined, currentValue: string | number | null | undefined) => {
   const current = typeof currentValue === "number" && Number.isFinite(currentValue)
@@ -133,8 +164,11 @@ export const createVehicleReport = async (data: VehicleFormData): Promise<SaveRe
     const noReporte = normalizeReportNumber(data.no_reporte);
     if (!noReporte) return { error: "N. de reporte obligatorio" };
 
-    const anio = data.fecha ? parseInt(data.fecha.split("-")[0], 10) : new Date().getFullYear();
+    const anio = parseReportYear(data.fecha);
+    if (anio == null) return { error: "Fecha obligatoria para definir el anio del reporte" };
+
     const unitKey = normalizeReportUnit(data.vehiculo);
+    if (!unitKey) return { error: "Vehiculo obligatorio" };
 
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_vehiculo")
@@ -225,8 +259,11 @@ export const createBoatReport = async (data: BoatFormData): Promise<SaveReportRe
     const noReporte = normalizeReportNumber(data.no_reporte);
     if (!noReporte) return { error: "N. de reporte obligatorio" };
 
-    const anio = data.fecha ? parseInt(data.fecha.split("-")[0], 10) : new Date().getFullYear();
+    const anio = parseReportYear(data.fecha);
+    if (anio == null) return { error: "Fecha obligatoria para definir el anio del reporte" };
+
     const unitKey = normalizeReportUnit(data.embarcacion);
+    if (!unitKey) return { error: "Embarcacion obligatoria" };
 
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_embarcacion")
@@ -343,14 +380,13 @@ export const createBoatReport = async (data: BoatFormData): Promise<SaveReportRe
     }
 
     const inspectedRows = data.embarcaciones_inspeccionadas
-      .filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona || item.posicion)
+      .filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona)
       .map((item) => ({
         reporte_id: reportId,
         nombre: item.nombre || "",
         matricula: item.matricula || null,
         no_inspeccion: item.no_inspeccion || null,
         zona: item.zona || null,
-        posicion: item.posicion || null,
       }));
     if (inspectedRows.length > 0) {
       const { error: inspectedError } = await supabase
@@ -377,10 +413,10 @@ const vehicleReportToFormData = (
   people: ReportPersonWithRoles[],
 ): VehicleFormData => {
   const peopleList = people;
-  const driver = peopleList.find((person) => person.roles.includes("chofer"));
-  const officer = peopleList.find((person) => person.roles.includes("oficial"));
+  const driver = peopleList.find((person) => hasAnyRole(person, VEHICLE_DRIVER_ROLES));
+  const officer = peopleList.find((person) => hasAnyRole(person, VEHICLE_OFFICIAL_ROLES));
   const companions = peopleList
-    .filter((person) => person.roles.includes("acompanante") || person.roles.includes("acompaÃ±ante"))
+    .filter((person) => hasAnyRole(person, VEHICLE_COMPANION_ROLES))
     .map((person) => person.nombre);
 
   return {
@@ -420,15 +456,15 @@ const boatReportToFormData = (
   people: ReportPersonWithRoles[],
 ): BoatFormData => {
   const peopleList = people;
-  const captain = peopleList.find((person) => person.roles.includes("capitan"));
-  const missionLead = peopleList.find((person) => person.roles.includes("encargado_mision"));
+  const captain = peopleList.find((person) => hasAnyRole(person, BOAT_CAPTAIN_ROLES));
+  const missionLead = peopleList.find((person) => hasAnyRole(person, BOAT_MISSION_LEAD_ROLES));
   const officialDirector = peopleList.find((person) => hasAnyRole(person, BOAT_OFFICIAL_DIRECTOR_ROLES)) ?? missionLead;
-  const operational = peopleList.find((person) => person.roles.includes("operacional"));
+  const operational = peopleList.find((person) => hasAnyRole(person, BOAT_OPERATIONAL_ROLES));
   const crew = peopleList
-    .filter((person) => person.roles.includes("tripulante"))
+    .filter((person) => hasAnyRole(person, BOAT_CREW_ROLES))
     .map((person) => ({ nombre: person.nombre, cedula: personCedula(person) }));
   const privatePeople = peopleList
-    .filter((person) => person.roles.includes("particular") || person.roles.includes("persona_particular"))
+    .filter((person) => hasAnyRole(person, BOAT_PRIVATE_PERSON_ROLES))
     .map((person) => person.nombre);
 
   return {
@@ -526,7 +562,7 @@ export const loadSavedReportEditorData = async (
       .single(),
     supabase
       .from("reporte_embarcaciones_inspeccionadas")
-      .select("nombre, matricula, no_inspeccion, zona, posicion")
+      .select("nombre, matricula, no_inspeccion, zona")
       .eq("reporte_id", reportId),
   ]);
   if (reportResult.error) throw reportResult.error;
@@ -537,7 +573,6 @@ export const loadSavedReportEditorData = async (
     matricula: item.matricula || "",
     no_inspeccion: item.no_inspeccion || "",
     zona: item.zona || "",
-    posicion: item.posicion || "",
   }));
 
   return {
@@ -562,10 +597,14 @@ export const updateVehicleReport = async (
 ): Promise<SaveReportResult> => {
   try {
     const normalizedNoReporte = normalizeReportNumber(data.no_reporte);
-    const normalizedYear = data.fecha ? parseInt(data.fecha.split("-")[0], 10) : fallbackYear;
     if (!normalizedNoReporte) return { error: "N. de reporte obligatorio" };
 
+    const normalizedYear = parseReportYear(data.fecha);
+    if (normalizedYear == null) return { error: "Fecha obligatoria para definir el anio del reporte" };
+
     const unitKey = normalizeReportUnit(data.vehiculo);
+    if (!unitKey) return { error: "Vehiculo obligatorio" };
+
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_vehiculo")
       .select("id, no_reporte, vehiculo")
@@ -662,10 +701,14 @@ export const updateBoatReport = async (
 ): Promise<SaveReportResult> => {
   try {
     const normalizedNoReporte = normalizeReportNumber(data.no_reporte);
-    const normalizedYear = data.fecha ? parseInt(data.fecha.split("-")[0], 10) : fallbackYear;
     if (!normalizedNoReporte) return { error: "N. de reporte obligatorio" };
 
+    const normalizedYear = parseReportYear(data.fecha);
+    if (normalizedYear == null) return { error: "Fecha obligatoria para definir el anio del reporte" };
+
     const unitKey = normalizeReportUnit(data.embarcacion);
+    if (!unitKey) return { error: "Embarcacion obligatoria" };
+
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_embarcacion")
       .select("id, no_reporte, embarcacion")
@@ -785,14 +828,13 @@ export const updateBoatReport = async (
     }
 
     const inspectedRows = data.embarcaciones_inspeccionadas
-      .filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona || item.posicion)
+      .filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona)
       .map((item) => ({
         reporte_id: reportId,
         nombre: item.nombre || "",
         matricula: item.matricula || null,
         no_inspeccion: item.no_inspeccion || null,
         zona: item.zona || null,
-        posicion: item.posicion || null,
       }));
     if (inspectedRows.length > 0) {
       const { error: inspectedError } = await supabase

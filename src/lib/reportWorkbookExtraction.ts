@@ -174,7 +174,7 @@ const readInspectedBoats = (sheet: WorkSheet, fromRow: number, toRow: number) =>
     const no_inspeccion = cellText(sheet, `H${row}`);
     const zona = cellText(sheet, `I${row}`);
     if ((nombre || matricula || no_inspeccion || zona) && ![nombre, matricula, no_inspeccion, zona].some(isTableLabel)) {
-      boats.push({ nombre, matricula, no_inspeccion, zona, posicion: "" });
+      boats.push({ nombre, matricula, no_inspeccion, zona });
     }
   }
   return boats;

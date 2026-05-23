@@ -473,7 +473,7 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         const { data: inspectedBoats, error: inspectedBoatsError } = tipo === "embarcacion"
           ? await supabase
             .from("reporte_embarcaciones_inspeccionadas")
-            .select("nombre, matricula, no_inspeccion, zona, posicion")
+            .select("nombre, matricula, no_inspeccion, zona")
             .eq("reporte_id", selectedId)
           : { data: [], error: null };
         if (inspectedBoatsError) throw inspectedBoatsError;
@@ -493,7 +493,6 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
           matricula: item.matricula || "",
           no_inspeccion: item.no_inspeccion || "",
           zona: item.zona || "",
-          posicion: item.posicion || "",
         })));
       } catch (error) {
         if (!active) return;
@@ -632,13 +631,23 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
 
       if (tipo === "vehiculo" && vehicleData) {
         normalizedNoReporte = normalizeReportNumber(vehicleData.no_reporte);
-        normalizedYear = vehicleData.fecha ? parseInt(vehicleData.fecha.split("-")[0]) : parseInt(year);
         if (!normalizedNoReporte) {
           toast.error("N° de reporte obligatorio");
           return;
         }
 
+        if (!vehicleData.fecha) {
+          toast.error("Fecha obligatoria para definir el anio del reporte");
+          return;
+        }
+        normalizedYear = parseInt(vehicleData.fecha.split("-")[0], 10);
+
         const unitKey = normalizeReportUnit(vehicleData.vehiculo);
+        if (!unitKey) {
+          toast.error("Vehiculo obligatorio");
+          return;
+        }
+
         const { data: matches, error: duplicateError } = await supabase
           .from("reportes_vehiculo")
           .select("id, no_reporte, vehiculo")
@@ -657,13 +666,23 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         }
       } else if (tipo === "embarcacion" && boatData) {
         normalizedNoReporte = normalizeReportNumber(boatData.no_reporte);
-        normalizedYear = boatData.fecha ? parseInt(boatData.fecha.split("-")[0]) : parseInt(year);
         if (!normalizedNoReporte) {
           toast.error("N° de reporte obligatorio");
           return;
         }
 
+        if (!boatData.fecha) {
+          toast.error("Fecha obligatoria para definir el anio del reporte");
+          return;
+        }
+        normalizedYear = parseInt(boatData.fecha.split("-")[0], 10);
+
         const unitKey = normalizeReportUnit(boatData.embarcacion);
+        if (!unitKey) {
+          toast.error("Embarcacion obligatoria");
+          return;
+        }
+
         const { data: matches, error: duplicateError } = await supabase
           .from("reportes_embarcacion")
           .select("id, no_reporte, embarcacion")
@@ -821,14 +840,13 @@ const ManageReport = ({ initialSelection }: ManageReportProps) => {
         if (sitiosInsert.length > 0) await supabase.from("reporte_sitios").insert(sitiosInsert);
 
         const inspectedInsert = boatData.embarcaciones_inspeccionadas
-          .filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona || item.posicion)
+          .filter((item) => item.nombre || item.matricula || item.no_inspeccion || item.zona)
           .map((item) => ({
             reporte_id: selectedId,
             nombre: item.nombre || "",
             matricula: item.matricula || null,
             no_inspeccion: item.no_inspeccion || null,
             zona: item.zona || null,
-            posicion: item.posicion || null,
           }));
         if (inspectedInsert.length > 0) {
           await supabase.from("reporte_embarcaciones_inspeccionadas").insert(inspectedInsert);

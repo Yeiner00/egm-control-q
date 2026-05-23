@@ -156,7 +156,6 @@ export type Database = {
           matricula: string | null
           no_inspeccion: string | null
           nombre: string
-          posicion: string | null
           reporte_id: string
           zona: string | null
         }
@@ -166,7 +165,6 @@ export type Database = {
           matricula?: string | null
           no_inspeccion?: string | null
           nombre: string
-          posicion?: string | null
           reporte_id: string
           zona?: string | null
         }
@@ -176,7 +174,6 @@ export type Database = {
           matricula?: string | null
           no_inspeccion?: string | null
           nombre?: string
-          posicion?: string | null
           reporte_id?: string
           zona?: string | null
         }

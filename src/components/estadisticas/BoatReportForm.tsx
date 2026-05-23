@@ -34,7 +34,6 @@ export interface InspectedBoatData {
   matricula: string;
   no_inspeccion: string;
   zona: string;
-  posicion: string;
 }
 
 export interface BoatFormData {
@@ -105,7 +104,7 @@ interface Props {
 
 const MAX_MOTIVOS = 10;
 const siteRowGridClass = "sm:grid-cols-[minmax(0,1fr)_minmax(0,0.5fr)_minmax(0,0.9fr)_2rem]";
-const inspectedBoatRowGridClass = "lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)_minmax(0,0.82fr)_minmax(0,0.48fr)_minmax(0,0.9fr)_2rem]";
+const inspectedBoatRowGridClass = "lg:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)_minmax(0,0.82fr)_minmax(0,0.48fr)_2rem]";
 const compactRowInputClass = "min-w-0 h-8 lg:h-8 px-3 py-0 text-sm";
 const compactDeleteButtonClass = "h-8 w-8 shrink-0 px-0";
 const BOAT_BITACORA_BY_UNIT: Record<string, string> = {
@@ -872,14 +871,13 @@ const BoatReportForm = ({
           <section className={cn("space-y-3 rounded-[calc(var(--radius)-0.08rem)] border border-border/70 bg-background/45 p-3", showPendingState && hasPendingItems(data.embarcaciones_inspeccionadas) && "report-list-pending")}>
             <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-1">
               <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Embarcaciones inspeccionadas</Label>
-              <Button type="button" variant="ghost" size="sm" onClick={() => update("embarcaciones_inspeccionadas", [...data.embarcaciones_inspeccionadas, { nombre: "", matricula: "", no_inspeccion: "", zona: "", posicion: "" }])}><Plus className="h-3 w-3 mr-1" />Agregar</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => update("embarcaciones_inspeccionadas", [...data.embarcaciones_inspeccionadas, { nombre: "", matricula: "", no_inspeccion: "", zona: "" }])}><Plus className="h-3 w-3 mr-1" />Agregar</Button>
             </div>
             <div className={cn("hidden gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground lg:grid", inspectedBoatRowGridClass)}>
               <span>Nombre</span>
               <span>Matricula</span>
               <span>N. Inspeccion</span>
               <span>Zona</span>
-              <span>Posicion</span>
               <span />
             </div>
             {data.embarcaciones_inspeccionadas.map((boat, index) => (
@@ -889,7 +887,6 @@ const BoatReportForm = ({
                   <Input placeholder="Matricula" value={boat.matricula} onChange={(event) => updateInspectedBoat(index, "matricula", event.target.value)} className={pendingInputClass(boat.matricula, compactRowInputClass)} />
                   <Input placeholder="N. Inspeccion" value={boat.no_inspeccion} onChange={(event) => updateInspectedBoat(index, "no_inspeccion", event.target.value)} className={pendingInputClass(boat.no_inspeccion, compactRowInputClass)} />
                   <Input placeholder="Zona" value={boat.zona} onChange={(event) => updateInspectedBoat(index, "zona", event.target.value)} className={pendingInputClass(boat.zona, compactRowInputClass)} />
-                  <Input placeholder="Posicion" value={boat.posicion} onChange={(event) => updateInspectedBoat(index, "posicion", event.target.value)} className={pendingInputClass(boat.posicion, compactRowInputClass)} />
                   <Button type="button" variant="ghost" size="sm" className={compactDeleteButtonClass} aria-label="Eliminar embarcacion inspeccionada" onClick={() => update("embarcaciones_inspeccionadas", data.embarcaciones_inspeccionadas.filter((_, idx) => idx !== index))}><Trash2 className="h-3 w-3" /></Button>
                 </div>
                 <PendingHint show={isEmptyReportValue(boat)} />

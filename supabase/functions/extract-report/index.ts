@@ -95,7 +95,7 @@ Para EMBARCACION extraer:
 - tripulantes (array de {nombre, cedula})
 - personas_particulares (array de strings)
 - sitios_visitados (array de {nombre_sitio, zona, posicion})
-- embarcaciones_inspeccionadas (array de {nombre, matricula, no_inspeccion, zona, posicion})
+- embarcaciones_inspeccionadas (array de {nombre, matricula, no_inspeccion, zona})
 - saldo_anterior, combustible_trasegado_bodega, total_antes_viaje, combustible_trasegado_durante, combustible_gastado, saldo_despues
 - tipo_combustible, estacion_combustible, lugar_combustible, cedula_juridica_combustible, no_factura, millas_nauticas
 - novedades
@@ -216,7 +216,6 @@ Responde SOLO con JSON.`;
                         matricula: { type: "string" },
                         no_inspeccion: { type: "string" },
                         zona: { type: "string" },
-                        posicion: { type: "string" },
                       },
                     },
                   },
