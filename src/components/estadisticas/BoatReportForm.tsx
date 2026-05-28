@@ -92,6 +92,7 @@ interface Props {
   siteOptions?: ReportSiteOption[];
   showPendingState?: boolean;
   saveLabel?: string;
+  cancelLabel?: string;
   autoCalculateMotorHours?: boolean;
   autoFillBoatBitacora?: boolean;
   useFuelLoadToggle?: boolean;
@@ -345,6 +346,7 @@ const BoatReportForm = ({
   siteOptions = [],
   showPendingState = true,
   saveLabel = "Guardar Reporte",
+  cancelLabel,
   autoCalculateMotorHours = false,
   autoFillBoatBitacora = false,
   useFuelLoadToggle = false,
@@ -956,6 +958,7 @@ const BoatReportForm = ({
           onCancel={onCancel}
           saving={saving}
           saveLabel={saveLabel}
+          cancelLabel={cancelLabel}
           onDelete={onDelete}
           deleting={deleting}
           deleteLabel={deleteLabel}

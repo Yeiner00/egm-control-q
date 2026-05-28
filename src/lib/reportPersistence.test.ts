@@ -212,6 +212,30 @@ describe("report identity validation", () => {
     expect(fromMock).not.toHaveBeenCalled();
   });
 
+  it("blocks vehicle saves without the operational people and times", async () => {
+    await expect(createVehicleReport({
+      ...vehicleIdentity,
+      hora_salida: "07:30",
+      hora_regreso: "12:15",
+      chofer: "",
+      oficial_a_cargo: "Pablo Barrantes Palma",
+    })).resolves.toEqual({
+      error: "Complete los datos operativos obligatorios: Chofer",
+    });
+
+    await expect(createVehicleReport({
+      ...vehicleIdentity,
+      hora_salida: "",
+      hora_regreso: "12:15",
+      chofer: "Roberth Sanchez Parra",
+      oficial_a_cargo: "",
+    })).resolves.toEqual({
+      error: "Complete los datos operativos obligatorios: Hora Salida, Oficial a Cargo",
+    });
+
+    expect(fromMock).not.toHaveBeenCalled();
+  });
+
   it("blocks boat saves without report number, date, or unit", async () => {
     await expect(createBoatReport({ ...boatIdentity, no_reporte: "" })).resolves.toEqual({
       error: "N. de reporte obligatorio",
@@ -221,6 +245,34 @@ describe("report identity validation", () => {
     });
     await expect(createBoatReport({ ...boatIdentity, embarcacion: " " })).resolves.toEqual({
       error: "Embarcacion obligatoria",
+    });
+
+    expect(fromMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks boat saves without the operational crew and times", async () => {
+    await expect(createBoatReport({
+      ...boatIdentity,
+      hora_salida: "09:30",
+      hora_regreso: "13:00",
+      capitan: "",
+      encargado_mision: "Encargado Uno",
+      operacional: "Operacional Uno",
+      tripulantes: [{ nombre: "Tripulante Uno", cedula: "" }],
+    })).resolves.toEqual({
+      error: "Complete los datos operativos obligatorios: Capitan",
+    });
+
+    await expect(createBoatReport({
+      ...boatIdentity,
+      hora_salida: "",
+      hora_regreso: "13:00",
+      capitan: "Capitan Uno",
+      encargado_mision: "",
+      operacional: "",
+      tripulantes: [],
+    })).resolves.toEqual({
+      error: "Complete los datos operativos obligatorios: Hora Salida, Encargado de Mision, Operacional, Tripulantes",
     });
 
     expect(fromMock).not.toHaveBeenCalled();

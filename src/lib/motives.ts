@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 const removeAccents = (value: string) =>
   value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -9,6 +7,11 @@ export const normalizeMotiveKey = (raw: string | null | undefined): string =>
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+export const BLOCKED_MOTIVE_CATALOG_KEYS = new Set(["inspeccion de embarcacion"]);
+
+export const isBlockedMotiveCatalogValue = (value: string | null | undefined) =>
+  BLOCKED_MOTIVE_CATALOG_KEYS.has(normalizeMotiveKey(value));
 
 export interface NormalizedMotive {
   motivo: string;
@@ -88,14 +91,12 @@ const CATEGORIES: Array<{ label: string; patterns: RegExp[] }> = [
     patterns: [/\balteracion de humedales\b/, /\bhumedales\b/],
   },
   {
-    label: "Inspección de embarcación",
-    patterns: [/\binspeccion\b.*\bembarcacion\b/, /\bgrupo nacional de buzos\b/, /\bbuzos\b/],
-  },
-  {
     label: "Apoyo operativo",
     patterns: [/\btraslado\b/, /\bextintores\b/, /\bincendio\b/, /\btrabajo conjunto\b/, /\bpolicia fronteras\b/],
   },
 ];
+
+export const DEFAULT_MOTIVE_CATALOG_LABELS = CATEGORIES.map((category) => category.label);
 
 const canonicalize = (raw: string): NormalizedMotive[] => {
   const original = raw.trim();
@@ -208,10 +209,28 @@ export const buildLegacyReportMotiveRows = (
   }));
 
 export const loadMotiveOptions = async () => {
-  const { data, error } = await supabase.from("reporte_motivos").select("motivo");
-  if (error) {
-    throw error;
+  const { supabase } = await import("@/integrations/supabase/client");
+
+  try {
+    const { data, error } = await supabase
+      .from("report_motive_catalog")
+      .select("motivo")
+      .eq("active", true);
+    if (!error && data && data.length > 0) {
+      return [...new Set(
+        (data.map((row) => row.motivo?.trim()).filter(Boolean) as string[])
+          .filter((motivo) => !isBlockedMotiveCatalogValue(motivo)),
+      )].sort();
+    }
+  } catch {
+    // Older deployments without the V2.2 catalog tables fall back to saved report motives.
   }
 
-  return [...new Set((data || []).map((row) => row.motivo?.trim()).filter(Boolean) as string[])].sort();
+  const { data, error } = await supabase.from("reporte_motivos").select("motivo");
+  if (error) throw error;
+
+  return [...new Set([
+    ...DEFAULT_MOTIVE_CATALOG_LABELS,
+    ...(data || []).map((row) => row.motivo?.trim()).filter(Boolean) as string[],
+  ].filter((motivo) => !isBlockedMotiveCatalogValue(motivo)))].sort();
 };

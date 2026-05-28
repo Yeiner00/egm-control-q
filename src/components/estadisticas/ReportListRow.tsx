@@ -52,6 +52,7 @@ interface ReportListRowProps {
   generatingExcel?: boolean;
   onEdit?: () => void;
   editing?: boolean;
+  hideEditAction?: boolean;
   onRemove?: () => void;
   removeLabel?: string;
   notes?: ReactNode;
@@ -135,6 +136,7 @@ const ReportListRow = ({
   generatingExcel = false,
   onEdit,
   editing = false,
+  hideEditAction = false,
   onRemove,
   removeLabel,
   notes,
@@ -150,7 +152,7 @@ const ReportListRow = ({
   const showStatusText = status !== "ready" || Boolean(statusText || errorText);
   const showStatusIndicator = status !== "ready" || Boolean(statusText || errorText);
   const triggerLabel = `${expanded ? "Cerrar" : "Abrir"} ${rowTitle}`;
-  const editAction = onEdit || (expandable && !expanded ? () => onExpandedChange?.(true) : undefined);
+  const editAction = hideEditAction ? undefined : onEdit || (expandable && !expanded ? () => onExpandedChange?.(true) : undefined);
 
   const summaryContent = (
     <>

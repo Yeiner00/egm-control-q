@@ -1,28 +1,7 @@
 import { normalizeName, normalizeNameKey, splitPersonNames } from "@/lib/normalizeName";
+import { BASE_OFFICER_ALIASES, BASE_OFFICERS } from "@/lib/officerCatalog";
 
-const OFFICERS = [
-  { nombre: "Josue Acevedo Rios", identificacion: "603290196" },
-  { nombre: "Olman Alfaro Quiros", identificacion: "118150120" },
-  { nombre: "Sergio Alpizar Carrillo", identificacion: "602690624" },
-  { nombre: "Cesar Alvarez Martinez", identificacion: "208060620" },
-  { nombre: "Jhonny Araya Chacon", identificacion: "206900634" },
-  { nombre: "Pablo Barrantes Palma", identificacion: "603790678" },
-  { nombre: "Minor Cambronero Campos", identificacion: "603460878" },
-  { nombre: "Yeiner Castro Alvarez", identificacion: "603830474" },
-  { nombre: "Dara Chavarria Hernandez", identificacion: "304310005" },
-  { nombre: "Jorge Gonzalez Barrantes", identificacion: "603100467" },
-  { nombre: "Luis Carlos Gonzalez Jarquin", identificacion: "503740662" },
-  { nombre: "Landy Gonzalez Vargas", identificacion: "504250218" },
-  { nombre: "Randall Mena Villavicencio", identificacion: "205200912" },
-  { nombre: "Joel Mora Estrada", identificacion: "604640540" },
-  { nombre: "Alfonso Noguera Corrales", identificacion: "604320632" },
-  { nombre: "Bryan Obando Munoz", identificacion: "604560018" },
-  { nombre: "Wilber Pena Pena", identificacion: "502550203" },
-  { nombre: "Michael Rojas Brenes", identificacion: "603310561" },
-  { nombre: "Roberth Sanchez Parra", identificacion: "503950054" },
-  { nombre: "Obed Vasquez Chaves", identificacion: "702220098" },
-  { nombre: "Griselda Ugarte Ruiz", identificacion: "206910650" },
-] as const;
+const OFFICERS = BASE_OFFICERS;
 
 export type OfficerRecord = {
   nombre: string;
@@ -33,29 +12,9 @@ export const OFFICER_OPTIONS = OFFICERS.map((officer) => officer.nombre);
 
 const normalizeOfficerKey = normalizeNameKey;
 
-const KNOWN_PERSON_ALIASES = new Map<string, string>([
-  ["alfonso", "Alfonso Noguera Corrales"],
-  ["brayan obando munoz", "Bryan Obando Munoz"],
-  ["brayan obando quiros", "Bryan Obando Munoz"],
-  ["bryan obando quiros", "Bryan Obando Munoz"],
-  ["jprge gonzales barrantes", "Jorge Gonzalez Barrantes"],
-  ["jprge gonzalez barrantes", "Jorge Gonzalez Barrantes"],
-  ["luis c jarquin gonzales", "Luis Carlos Gonzalez Jarquin"],
-  ["luis c jarquin gonzalez", "Luis Carlos Gonzalez Jarquin"],
-  ["luis gonzales jarquin", "Luis Carlos Gonzalez Jarquin"],
-  ["luis gonzalez jarquin", "Luis Carlos Gonzalez Jarquin"],
-  ["micchael rojas brenes", "Michael Rojas Brenes"],
-  ["obed vasques chavez", "Obed Vasquez Chaves"],
-  ["obed vasques chaves", "Obed Vasquez Chaves"],
-  ["obed vasquez chavez", "Obed Vasquez Chaves"],
-  ["obed vazquez chavez", "Obed Vasquez Chaves"],
-  ["obed vazquez chaves", "Obed Vasquez Chaves"],
-  ["randall mena villavicencion", "Randall Mena Villavicencio"],
-  ["yeiner castro alvares", "Yeiner Castro Alvarez"],
-  ["yeiner castro anlvares", "Yeiner Castro Alvarez"],
-  ["yeiner cstro alvares", "Yeiner Castro Alvarez"],
-  ["yeiner cstro anlvares", "Yeiner Castro Alvarez"],
-]);
+const KNOWN_PERSON_ALIASES = new Map<string, string>(
+  BASE_OFFICER_ALIASES.map((alias) => [alias.alias, alias.officerName]),
+);
 
 const getNameTokens = (value: string) => normalizeOfficerKey(value).split(" ").filter(Boolean);
 

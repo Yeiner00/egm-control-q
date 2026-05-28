@@ -29,6 +29,16 @@ describe("normalizeMotives", () => {
       "Pesca ilegal",
     ]);
   });
+
+  it("keeps specific boat inspection text as a report-only motive", () => {
+    expect(normalizeMotives(["Realizar inspeccion de la embarcacion GC38-11"])).toEqual([
+      {
+        motivo: "Realizar inspeccion de la embarcacion GC38-11",
+        motivo_original: "Realizar inspeccion de la embarcacion GC38-11",
+        motivo_key: "realizar inspeccion de la embarcacion gc38 11",
+      },
+    ]);
+  });
 });
 
 describe("countVehicleMotiveReports", () => {

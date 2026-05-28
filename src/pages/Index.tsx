@@ -28,7 +28,7 @@ const EstadisticasTab = lazy(() => import("@/components/EstadisticasTab"));
 const EstadisticaTab = lazy(() => import("@/components/EstadisticaTab"));
 
 type AppTab = "inicio" | "zarpes" | "reportes" | "estadisticas" | "estadistica";
-type ReportesSubtab = "manual" | "subir" | "gestionar" | "exportar";
+type ReportesSubtab = "manual" | "subir" | "importar" | "catalogos" | "gestionar" | "exportar";
 type ZarpesSubtab = "subir" | "consulta";
 type ReportEditTarget =
   | { tipo: "vehiculo"; reportId: string }

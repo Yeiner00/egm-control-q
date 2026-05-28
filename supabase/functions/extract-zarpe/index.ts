@@ -50,7 +50,7 @@ const getGeminiApiKey = () => {
 const getGeminiVisionModel = () =>
   Deno.env.get("GEMINI_VISION_MODEL") ||
   Deno.env.get("GEMINI_TEXT_MODEL") ||
-  "gemini-2.5-flash-lite";
+  "gemini-3.1-flash-lite";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

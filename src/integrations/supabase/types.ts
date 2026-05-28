@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      officers: {
+        Row: {
+          active: boolean
+          cedula: string
+          created_at: string
+          id: string
+          nombre: string
+          nombre_normalizado: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cedula: string
+          created_at?: string
+          id?: string
+          nombre: string
+          nombre_normalizado: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cedula?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          nombre_normalizado?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      officer_aliases: {
+        Row: {
+          alias: string
+          alias_normalizado: string
+          created_at: string
+          id: string
+          officer_id: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alias: string
+          alias_normalizado: string
+          created_at?: string
+          id?: string
+          officer_id: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alias?: string
+          alias_normalizado?: string
+          created_at?: string
+          id?: string
+          officer_id?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       personas_reporte: {
         Row: {
           created_at: string
@@ -89,6 +152,330 @@ export type Database = {
           nombre_normalizado?: string
           reporte_id?: string
           tipo_reporte?: string
+        }
+        Relationships: []
+      }
+      report_catalog_admin_audit: {
+        Row: {
+          action: string
+          changed_by: string | null
+          created_at: string
+          entity_id: string
+          entity_table: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          created_at?: string
+          entity_id: string
+          entity_table: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_table?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Relationships: []
+      }
+      report_import_alias_suggestions: {
+        Row: {
+          created_at: string
+          field_id: string | null
+          field_key: string | null
+          id: string
+          job_id: string
+          normalized_alias: string
+          officer_id: string
+          raw_alias: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_by: string
+        }
+        Insert: {
+          created_at?: string
+          field_id?: string | null
+          field_key?: string | null
+          id?: string
+          job_id: string
+          normalized_alias: string
+          officer_id: string
+          raw_alias: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
+        }
+        Update: {
+          created_at?: string
+          field_id?: string | null
+          field_key?: string | null
+          id?: string
+          job_id?: string
+          normalized_alias?: string
+          officer_id?: string
+          raw_alias?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
+        }
+        Relationships: []
+      }
+      report_motive_catalog: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          motivo: string
+          motivo_key: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          motivo: string
+          motivo_key: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          motivo?: string
+          motivo_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_motive_aliases: {
+        Row: {
+          alias: string
+          alias_key: string
+          created_at: string
+          created_by: string | null
+          id: string
+          motive_id: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alias: string
+          alias_key: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          motive_id: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alias?: string
+          alias_key?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          motive_id?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_site_catalog: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          nombre_sitio: string
+          posicion: string | null
+          site_key: string
+          updated_at: string
+          zona: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nombre_sitio: string
+          posicion?: string | null
+          site_key: string
+          updated_at?: string
+          zona?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nombre_sitio?: string
+          posicion?: string | null
+          site_key?: string
+          updated_at?: string
+          zona?: string | null
+        }
+        Relationships: []
+      }
+      report_site_aliases: {
+        Row: {
+          alias: string
+          alias_key: string
+          created_at: string
+          created_by: string | null
+          id: string
+          site_id: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alias: string
+          alias_key: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          site_id: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alias?: string
+          alias_key?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          site_id?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_import_catalog_suggestions: {
+        Row: {
+          action_taken: string
+          catalog_item_id: string | null
+          catalog_type: string
+          created_at: string
+          field_id: string | null
+          field_key: string | null
+          final_value: string | null
+          id: string
+          job_id: string
+          metadata: Json
+          normalized_value: string
+          raw_value: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_by: string
+        }
+        Insert: {
+          action_taken: string
+          catalog_item_id?: string | null
+          catalog_type: string
+          created_at?: string
+          field_id?: string | null
+          field_key?: string | null
+          final_value?: string | null
+          id?: string
+          job_id: string
+          metadata?: Json
+          normalized_value: string
+          raw_value: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
+        }
+        Update: {
+          action_taken?: string
+          catalog_item_id?: string | null
+          catalog_type?: string
+          created_at?: string
+          field_id?: string | null
+          field_key?: string | null
+          final_value?: string | null
+          id?: string
+          job_id?: string
+          metadata?: Json
+          normalized_value?: string
+          raw_value?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
+        }
+        Relationships: []
+      }
+      report_import_person_suggestions: {
+        Row: {
+          action_taken: string
+          created_at: string
+          field_id: string | null
+          field_key: string | null
+          final_name: string | null
+          id: string
+          job_id: string
+          normalized_name: string
+          officer_id: string | null
+          raw_name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_by: string
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string
+          field_id?: string | null
+          field_key?: string | null
+          final_name?: string | null
+          id?: string
+          job_id: string
+          normalized_name: string
+          officer_id?: string | null
+          raw_name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string
+          field_id?: string | null
+          field_key?: string | null
+          final_name?: string | null
+          id?: string
+          job_id?: string
+          normalized_name?: string
+          officer_id?: string | null
+          raw_name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
         }
         Relationships: []
       }

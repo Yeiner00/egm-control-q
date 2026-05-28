@@ -48,7 +48,7 @@ const getGeminiApiKey = () => {
 };
 
 const getGeminiTextModel = () =>
-  Deno.env.get("GEMINI_TEXT_MODEL") || "gemini-2.5-flash-lite";
+  Deno.env.get("GEMINI_TEXT_MODEL") || "gemini-3.1-flash-lite";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

@@ -69,6 +69,7 @@ interface Props {
   onFuelLoadEnabledChange?: (enabled: boolean) => void;
   showPendingState?: boolean;
   saveLabel?: string;
+  cancelLabel?: string;
   onDelete?: () => void;
   deleting?: boolean;
   deleteLabel?: string;
@@ -284,6 +285,7 @@ const VehicleReportForm = ({
   onFuelLoadEnabledChange,
   showPendingState = true,
   saveLabel = "Guardar Reporte",
+  cancelLabel,
   onDelete,
   deleting = false,
   deleteLabel,
@@ -762,6 +764,7 @@ const VehicleReportForm = ({
           onCancel={onCancel}
           saving={saving}
           saveLabel={saveLabel}
+          cancelLabel={cancelLabel}
           onDelete={onDelete}
           deleting={deleting}
           deleteLabel={deleteLabel}

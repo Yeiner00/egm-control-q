@@ -6,6 +6,7 @@ interface ReportFormActionBarProps {
   onCancel: () => void;
   saving: boolean;
   saveLabel: string;
+  cancelLabel?: string;
   onDelete?: () => void;
   deleting?: boolean;
   deleteLabel?: string;
@@ -19,6 +20,7 @@ const ReportFormActionBar = ({
   onCancel,
   saving,
   saveLabel,
+  cancelLabel = "Cancelar",
   onDelete,
   deleting = false,
   deleteLabel = "Eliminar reporte",
@@ -31,7 +33,7 @@ const ReportFormActionBar = ({
       </Button>
       <Button type="button" variant="outline" onClick={onCancel} disabled={saving || deleting} size="sm" className={actionButtonClass}>
         <X className="h-4 w-4 mr-1" />
-        Cancelar
+        {cancelLabel}
       </Button>
     </div>
     {onDelete && (

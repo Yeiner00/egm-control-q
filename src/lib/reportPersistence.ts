@@ -6,6 +6,7 @@ import { getErrorMessage } from "@/lib/errorMessage";
 import { buildLegacyReportMotiveRows, buildReportMotiveRows, loadMotiveOptions } from "@/lib/motives";
 import { normalizeName } from "@/lib/normalizeName";
 import { findOfficerByName } from "@/lib/officers";
+import { isEmptyReportValue } from "@/lib/missingData";
 import {
   countUniqueNormalizedNames,
   deleteReportPeople,
@@ -82,6 +83,41 @@ const normalizeReportRole = (role: string) => {
 
 const hasAnyRole = (person: ReportPersonWithRoles, roles: Set<string>) =>
   person.roles.some((role) => roles.has(normalizeReportRole(role)));
+
+const addMissingRequired = (missing: string[], label: string, value: unknown) => {
+  if (isEmptyReportValue(value)) {
+    missing.push(label);
+  }
+};
+
+const addMissingRequiredList = (missing: string[], label: string, values: unknown[]) => {
+  if (values.length === 0 || values.every((value) => isEmptyReportValue(value))) {
+    missing.push(label);
+  }
+};
+
+const formatMissingRequiredError = (missing: string[]) =>
+  missing.length > 0 ? `Complete los datos operativos obligatorios: ${missing.join(", ")}` : null;
+
+const validateVehicleOperationalFields = (data: VehicleFormData) => {
+  const missing: string[] = [];
+  addMissingRequired(missing, "Hora Salida", data.hora_salida);
+  addMissingRequired(missing, "Hora Regreso", data.hora_regreso);
+  addMissingRequired(missing, "Chofer", data.chofer);
+  addMissingRequired(missing, "Oficial a Cargo", data.oficial_a_cargo);
+  return formatMissingRequiredError(missing);
+};
+
+const validateBoatOperationalFields = (data: BoatFormData) => {
+  const missing: string[] = [];
+  addMissingRequired(missing, "Hora Salida", data.hora_salida);
+  addMissingRequired(missing, "Hora Regreso", data.hora_regreso);
+  addMissingRequired(missing, "Capitan", data.capitan);
+  addMissingRequired(missing, "Encargado de Mision", data.encargado_mision);
+  addMissingRequired(missing, "Operacional", data.operacional);
+  addMissingRequiredList(missing, "Tripulantes", data.tripulantes);
+  return formatMissingRequiredError(missing);
+};
 
 const knownCedulaFor = (name: string | null | undefined, currentValue: string | number | null | undefined) => {
   const current = typeof currentValue === "number" && Number.isFinite(currentValue)
@@ -169,6 +205,9 @@ export const createVehicleReport = async (data: VehicleFormData): Promise<SaveRe
 
     const unitKey = normalizeReportUnit(data.vehiculo);
     if (!unitKey) return { error: "Vehiculo obligatorio" };
+
+    const operationalError = validateVehicleOperationalFields(data);
+    if (operationalError) return { error: operationalError };
 
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_vehiculo")
@@ -264,6 +303,9 @@ export const createBoatReport = async (data: BoatFormData): Promise<SaveReportRe
 
     const unitKey = normalizeReportUnit(data.embarcacion);
     if (!unitKey) return { error: "Embarcacion obligatoria" };
+
+    const operationalError = validateBoatOperationalFields(data);
+    if (operationalError) return { error: operationalError };
 
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_embarcacion")
@@ -605,6 +647,9 @@ export const updateVehicleReport = async (
     const unitKey = normalizeReportUnit(data.vehiculo);
     if (!unitKey) return { error: "Vehiculo obligatorio" };
 
+    const operationalError = validateVehicleOperationalFields(data);
+    if (operationalError) return { error: operationalError };
+
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_vehiculo")
       .select("id, no_reporte, vehiculo")
@@ -708,6 +753,9 @@ export const updateBoatReport = async (
 
     const unitKey = normalizeReportUnit(data.embarcacion);
     if (!unitKey) return { error: "Embarcacion obligatoria" };
+
+    const operationalError = validateBoatOperationalFields(data);
+    if (operationalError) return { error: operationalError };
 
     const { data: matches, error: duplicateError } = await supabase
       .from("reportes_embarcacion")

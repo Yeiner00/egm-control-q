@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { mapToBoatFormData, mapToVehicleFormData, type ExtractedReportData } from "@/lib/report-utils";
@@ -25,14 +25,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ReportUploader, { type BatchItem } from "@/components/estadisticas/ReportUploader";
+import ReportImportV2 from "@/components/estadisticas/ReportImportV2";
+import ReportCatalogAdmin from "@/components/estadisticas/ReportCatalogAdmin";
 import VehicleReportForm, { type VehicleFormData } from "@/components/estadisticas/VehicleReportForm";
 import BoatReportForm, { type BoatFormData } from "@/components/estadisticas/BoatReportForm";
 import ManageReport from "@/components/estadisticas/ManageReport";
 import ExportSection from "@/components/estadisticas/ExportSection";
-import { Car, CheckCircle2, FileOutput, FilePlus2, FileSpreadsheet, Loader2, Settings2, Ship, Upload } from "lucide-react";
+import { Car, CheckCircle2, Database, FileOutput, FilePlus2, FileSpreadsheet, Loader2, Settings2, ShieldCheck, Ship, Upload } from "lucide-react";
 
 type ReportType = "vehiculo" | "embarcacion";
-type ReportesSubtab = "manual" | "subir" | "gestionar" | "exportar";
+type ReportesSubtab = "manual" | "subir" | "importar" | "catalogos" | "gestionar" | "exportar";
 type ReportEditTarget = { tipo: ReportType; reportId: string };
 type SubtabRequest<T extends string> = { value: T; nonce: number; editTarget?: ReportEditTarget };
 
@@ -235,28 +237,27 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
   const [manualBoatFuelLoadEnabled, setManualBoatFuelLoadEnabled] = useState(false);
   const optionType = showForm && reportType ? reportType : manualType;
 
+  const loadCommonOptions = useCallback(async () => {
+    const [vehicleUnits, boatUnits, peopleOptions, loadedMotiveOptions, loadedSiteOptions] = await Promise.all([
+      supabase.from("reportes_vehiculo").select("vehiculo"),
+      supabase.from("reportes_embarcacion").select("embarcacion"),
+      loadPeopleNameOptions(["particular", "persona_particular"]),
+      loadMotiveOptions(),
+      loadSiteOptions(),
+    ]);
+
+    if (vehicleUnits.error) throw vehicleUnits.error;
+    if (boatUnits.error) throw boatUnits.error;
+
+    setVehicleUnitOptions(uniqueUnitOptions((vehicleUnits.data || []).map((row) => row.vehiculo)));
+    setBoatUnitOptions(uniqueUnitOptions((boatUnits.data || []).map((row) => row.embarcacion)));
+    setManualPeopleOptions(mergeOfficerOptions(peopleOptions));
+    setMotiveOptions(loadedMotiveOptions);
+    setSiteOptions(loadedSiteOptions);
+  }, []);
+
   useEffect(() => {
     let active = true;
-
-    const loadCommonOptions = async () => {
-      const [vehicleUnits, boatUnits, peopleOptions, loadedMotiveOptions, loadedSiteOptions] = await Promise.all([
-        supabase.from("reportes_vehiculo").select("vehiculo"),
-        supabase.from("reportes_embarcacion").select("embarcacion"),
-        loadPeopleNameOptions(["particular", "persona_particular"]),
-        loadMotiveOptions(),
-        loadSiteOptions(),
-      ]);
-
-      if (vehicleUnits.error) throw vehicleUnits.error;
-      if (boatUnits.error) throw boatUnits.error;
-      if (!active) return;
-
-      setVehicleUnitOptions(uniqueUnitOptions((vehicleUnits.data || []).map((row) => row.vehiculo)));
-      setBoatUnitOptions(uniqueUnitOptions((boatUnits.data || []).map((row) => row.embarcacion)));
-      setManualPeopleOptions(mergeOfficerOptions(peopleOptions));
-      setMotiveOptions(loadedMotiveOptions);
-      setSiteOptions(loadedSiteOptions);
-    };
 
     loadCommonOptions().catch((error) => {
       if (!active) return;
@@ -273,7 +274,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadCommonOptions]);
 
   useEffect(() => {
     if (!subtabRequest) return;
@@ -796,6 +797,14 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
                 <Upload className="h-4 w-4" />
                 Subir
               </TabsTrigger>
+              <TabsTrigger value="importar">
+                <ShieldCheck className="h-4 w-4" />
+                V2
+              </TabsTrigger>
+              <TabsTrigger value="catalogos">
+                <Database className="h-4 w-4" />
+                Catalogos
+              </TabsTrigger>
               <TabsTrigger value="gestionar">
                 <Settings2 className="h-4 w-4" />
                 Gestionar
@@ -819,6 +828,20 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
                 motiveOptions={motiveOptions}
                 siteOptions={siteOptions}
               />
+            </TabsContent>
+            <TabsContent value="importar">
+              <ReportImportV2
+                stationOptions={MANUAL_STATIONS}
+                vehicleUnitOptions={vehicleUnitOptions}
+                boatUnitOptions={boatUnitOptions}
+                peopleOptions={manualPeopleOptions}
+                motiveOptions={motiveOptions}
+                siteOptions={siteOptions}
+                onCatalogsChanged={loadCommonOptions}
+              />
+            </TabsContent>
+            <TabsContent value="catalogos">
+              <ReportCatalogAdmin onCatalogsChanged={loadCommonOptions} />
             </TabsContent>
             <TabsContent value="manual">
               <Card className="mb-4 overflow-hidden">

@@ -1,4 +1,5 @@
 export interface ReportSiteOption {
+  id?: string;
   nombre_sitio: string;
   zona: string;
   posicion: string;
@@ -152,7 +153,7 @@ export const DEFAULT_REPORT_SITE_OPTIONS: ReportSiteOption[] = [
   },
 ];
 
-const normalizeSiteKey = (value: string) =>
+export const normalizeSiteKey = (value: string) =>
   value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -161,6 +162,27 @@ const normalizeSiteKey = (value: string) =>
     .trim();
 
 export const loadSiteOptions = async (): Promise<ReportSiteOption[]> => {
+  const { supabase } = await import("@/integrations/supabase/client");
+
+  try {
+    const { data, error } = await supabase
+      .from("report_site_catalog")
+      .select("id,nombre_sitio,zona,posicion")
+      .eq("active", true);
+    if (!error && data && data.length > 0) {
+      return data
+        .map((site) => ({
+          id: site.id,
+          nombre_sitio: site.nombre_sitio,
+          zona: site.zona || "",
+          posicion: site.posicion || "",
+        }))
+        .sort((a, b) => a.nombre_sitio.localeCompare(b.nombre_sitio));
+    }
+  } catch {
+    // Older deployments without the V2.2 catalog tables keep using the bundled site list.
+  }
+
   return DEFAULT_REPORT_SITE_OPTIONS
     .map((site) => ({ ...site }))
     .sort((a, b) => a.nombre_sitio.localeCompare(b.nombre_sitio));
