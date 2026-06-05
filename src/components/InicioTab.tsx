@@ -389,7 +389,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-cyan-300/35 dark:bg-cyan-400/15 dark:text-cyan-50 dark:shadow-none dark:hover:bg-cyan-400/25"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-[hsl(var(--primary-on-dark)/0.35)] dark:bg-[hsl(var(--primary-on-dark)/0.15)] dark:text-[hsl(var(--primary-on-dark))] dark:shadow-none dark:hover:bg-[hsl(var(--primary-on-dark)/0.25)]"
                 onClick={onOpenReportesManual}
               >
                 <FilePlus2 className="h-4 w-4 shrink-0" />
@@ -398,7 +398,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-cyan-300/35 dark:bg-cyan-400/15 dark:text-cyan-50 dark:shadow-none dark:hover:bg-cyan-400/25"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-[hsl(var(--primary-on-dark)/0.35)] dark:bg-[hsl(var(--primary-on-dark)/0.15)] dark:text-[hsl(var(--primary-on-dark))] dark:shadow-none dark:hover:bg-[hsl(var(--primary-on-dark)/0.25)]"
                 onClick={onOpenZarpesUpload}
               >
                 <ImageUp className="h-4 w-4 shrink-0" />
@@ -407,7 +407,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-cyan-300/35 dark:bg-cyan-400/15 dark:text-cyan-50 dark:shadow-none dark:hover:bg-cyan-400/25"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-[hsl(var(--primary-on-dark)/0.35)] dark:bg-[hsl(var(--primary-on-dark)/0.15)] dark:text-[hsl(var(--primary-on-dark))] dark:shadow-none dark:hover:bg-[hsl(var(--primary-on-dark)/0.25)]"
                 onClick={onOpenEstadistica}
               >
                 <BarChart3 className="h-4 w-4 shrink-0" />
@@ -506,7 +506,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                           <div className="text-sm font-semibold text-foreground lg:text-[0.95rem]">Reporte {report.no_reporte}</div>
                           <div className="mt-1 text-sm text-muted-foreground lg:text-[0.88rem]">{report.vehiculo || "Unidad sin identificar"}</div>
                         </div>
-                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-sky-300/70 bg-sky-100 px-3 py-1 text-xs font-semibold leading-none text-sky-800 dark:border-sky-400/35 dark:bg-sky-400/15 dark:text-sky-100 lg:px-2.5 lg:py-0.5">
+                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[hsl(var(--state-info)/0.7)] bg-[hsl(var(--state-info-soft))] px-3 py-1 text-xs font-semibold leading-none text-[hsl(var(--state-info))] dark:border-[hsl(var(--state-info)/0.35)] dark:bg-[hsl(var(--state-info)/0.15)] dark:text-[hsl(var(--state-info))] lg:px-2.5 lg:py-0.5">
                           Movil
                         </div>
                       </div>
@@ -546,7 +546,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                           <div className="text-sm font-semibold text-foreground lg:text-[0.95rem]">Reporte {report.no_reporte}</div>
                           <div className="mt-1 text-sm text-muted-foreground lg:text-[0.88rem]">{report.embarcacion || "Embarcacion sin identificar"}</div>
                         </div>
-                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-red-300/70 bg-red-100 px-3 py-1 text-xs font-semibold leading-none text-red-800 dark:border-red-400/35 dark:bg-red-400/15 dark:text-red-100 lg:px-2.5 lg:py-0.5">
+                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[hsl(var(--state-danger)/0.7)] bg-[hsl(var(--state-danger-soft))] px-3 py-1 text-xs font-semibold leading-none text-[hsl(var(--state-danger))] dark:border-[hsl(var(--state-danger)/0.35)] dark:bg-[hsl(var(--state-danger)/0.15)] dark:text-[hsl(var(--state-danger))] lg:px-2.5 lg:py-0.5">
                           Embarcacion
                         </div>
                       </div>
@@ -631,15 +631,15 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
 
             <div className="grid gap-3 sm:grid-cols-3 lg:gap-2.5">
               <div className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/50 px-3.5 py-2.5 lg:px-3 lg:py-2">
-                <span className="h-3 w-3 rounded-full bg-red-500" />
+                <span className="h-3 w-3 rounded-full bg-[hsl(var(--squad-alfa))]" />
                 <span className="text-sm font-semibold text-foreground">Escuadra Alfa</span>
               </div>
               <div className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/50 px-3.5 py-2.5 lg:px-3 lg:py-2">
-                <span className="h-3 w-3 rounded-full bg-blue-500" />
+                <span className="h-3 w-3 rounded-full bg-[hsl(var(--squad-bravo))]" />
                 <span className="text-sm font-semibold text-foreground">Escuadra Bravo</span>
               </div>
               <div className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/50 px-3.5 py-2.5 lg:px-3 lg:py-2">
-                <span className="h-3 w-3 rounded-full bg-amber-400" />
+                <span className="h-3 w-3 rounded-full bg-[hsl(var(--state-warning))]" />
                 <span className="text-sm font-semibold text-foreground">Feriados</span>
               </div>
             </div>
@@ -671,17 +671,17 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                     title={holiday ? `${holiday.label} (${holiday.kind.replace("_", " ")})` : undefined}
                     className={cn(
                       "relative flex h-16 items-center justify-center rounded-md border text-sm font-semibold transition-colors lg:h-14",
-                      squadType === "alfa" && "border-red-200 bg-red-500/15 text-red-700 dark:border-red-400/30 dark:bg-red-500/20 dark:text-red-200",
-                      squadType === "bravo" && "border-blue-200 bg-blue-500/15 text-blue-700 dark:border-blue-400/30 dark:bg-blue-500/20 dark:text-blue-200",
-                      holiday && "border-amber-300 shadow-[inset_0_0_0_1px_rgba(251,191,36,0.55)]",
+                      squadType === "alfa" && "border-[hsl(var(--squad-alfa)/0.25)] bg-[hsl(var(--squad-alfa)/0.15)] text-[hsl(var(--squad-alfa-fg))] dark:border-[hsl(var(--squad-alfa)/0.3)] dark:bg-[hsl(var(--squad-alfa)/0.2)] dark:text-[hsl(var(--squad-alfa-fg))]",
+                      squadType === "bravo" && "border-[hsl(var(--squad-bravo)/0.25)] bg-[hsl(var(--squad-bravo)/0.15)] text-[hsl(var(--squad-bravo-fg))] dark:border-[hsl(var(--squad-bravo)/0.3)] dark:bg-[hsl(var(--squad-bravo)/0.2)] dark:text-[hsl(var(--squad-bravo-fg))]",
+                      holiday && "border-[hsl(var(--state-warning)/0.55)] shadow-[inset_0_0_0_1px_hsl(var(--state-warning)/0.55)]",
                       isToday && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                     )}
                   >
                     {holiday && (
                       <span
                         className={cn(
-                          "absolute right-1.5 top-1.5 h-2 w-2 rounded-full",
-                          holiday.kind === "obligatorio" ? "bg-amber-400" : "bg-amber-300",
+                          "absolute right-1.5 top-1.5 h-2 w-2 rounded-[var(--radius-md)]",
+                          holiday.kind === "obligatorio" ? "bg-[hsl(var(--state-warning))]" : "bg-[hsl(var(--state-warning)/0.7)]",
                         )}
                       />
                     )}
