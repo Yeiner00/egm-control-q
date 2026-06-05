@@ -27,7 +27,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative inline-flex min-h-[3.45rem] min-w-[8.75rem] items-center justify-center gap-2 whitespace-nowrap border-b-[3px] border-transparent px-5 py-2.5 text-sm font-semibold text-slate-500 ring-offset-background transition-[color,border-color,background-color] duration-200 hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary dark:text-white/55 dark:data-[state=active]:border-teal-light dark:data-[state=active]:text-teal-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 lg:min-h-[3rem] lg:min-w-[8.25rem] lg:px-4",
+      "relative inline-flex min-h-[3.45rem] min-w-[8.75rem] items-center justify-center gap-2 whitespace-nowrap border-b-[3px] border-transparent px-5 py-2.5 text-sm font-semibold text-muted-foreground ring-offset-background transition-[color,border-color,background-color] duration-200 hover:text-foreground data-[state=active]:border-[hsl(var(--primary))] data-[state=active]:text-[hsl(var(--primary))] dark:text-muted-foreground dark:data-[state=active]:border-[hsl(var(--primary-on-dark))] dark:data-[state=active]:text-[hsl(var(--primary-on-dark))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 lg:min-h-[3rem] lg:min-w-[8.25rem] lg:px-4",
       className,
     )}
     {...props}
