@@ -114,8 +114,8 @@ const HeaderMiniCalendar = () => {
                 key={date.toISOString()}
                 className={cn(
                   "flex h-7 items-center justify-center rounded-md border text-[0.72rem] font-semibold",
-                  squadType === "alfa" && "border-red-200 bg-red-500/15 text-red-700 dark:border-red-400/30 dark:bg-red-500/20 dark:text-red-200",
-                  squadType === "bravo" && "border-blue-200 bg-blue-500/15 text-blue-700 dark:border-blue-400/30 dark:bg-blue-500/20 dark:text-blue-200",
+                  squadType === "alfa" && "border-[hsl(var(--squad-alfa)/0.25)] bg-[hsl(var(--squad-alfa)/0.15)] text-[hsl(var(--squad-alfa-fg))] dark:border-[hsl(var(--squad-alfa)/0.3)] dark:bg-[hsl(var(--squad-alfa)/0.2)] dark:text-[hsl(var(--squad-alfa-fg))]",
+                  squadType === "bravo" && "border-[hsl(var(--squad-bravo)/0.25)] bg-[hsl(var(--squad-bravo)/0.15)] text-[hsl(var(--squad-bravo-fg))] dark:border-[hsl(var(--squad-bravo)/0.3)] dark:bg-[hsl(var(--squad-bravo)/0.2)] dark:text-[hsl(var(--squad-bravo-fg))]",
                   isToday && "ring-2 ring-primary ring-offset-1 ring-offset-background",
                 )}
               >
@@ -126,8 +126,8 @@ const HeaderMiniCalendar = () => {
         </div>
 
         <div className="mt-3 flex items-center justify-center gap-3 text-[0.68rem] font-semibold text-muted-foreground">
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />Alfa</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500" />Bravo</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[hsl(var(--squad-alfa))]" />Alfa</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[hsl(var(--squad-bravo))]" />Bravo</span>
         </div>
       </PopoverContent>
     </Popover>
