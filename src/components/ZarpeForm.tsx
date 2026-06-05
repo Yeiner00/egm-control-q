@@ -57,7 +57,14 @@ const ZarpeForm = ({ formData, onChange, onSave, onCancel, saving }: Props) => {
         </div>
       </div>
 
-      <div className="space-y-5 p-5 sm:p-6 lg:space-y-4 lg:p-4">
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave();
+        }}
+        className="space-y-5 p-5 sm:p-6 lg:space-y-4 lg:p-4"
+      >
         <div className="panel-subtle p-4">
           <p className="section-copy">
             Revise los campos antes de guardar. Puede corregir cualquier dato sin afectar el flujo del registro.
@@ -67,12 +74,13 @@ const ZarpeForm = ({ formData, onChange, onSave, onCancel, saving }: Props) => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {fields.map(({ key, label, type }) => (
             <div key={key} className="space-y-2">
-              <Label htmlFor={key}>
-                {label}
-              </Label>
+              <Label htmlFor={key}>{label}</Label>
               <Input
                 id={key}
+                name={key}
                 type={type || "text"}
+                inputMode={type === "number" ? "numeric" : undefined}
+                autoComplete="off"
                 value={
                   type === "date"
                     ? toInputDate(String(formData[key] ?? ""))
@@ -86,21 +94,27 @@ const ZarpeForm = ({ formData, onChange, onSave, onCancel, saving }: Props) => {
                     update(key, e.target.value);
                   }
                 }}
+                required
+                aria-errormessage={`${key}-error`}
               />
+              <p id={`${key}-error`} className="form-error-message">
+                <span aria-hidden="true">!</span>
+                Este campo es obligatorio.
+              </p>
             </div>
           ))}
         </div>
 
         <div className="flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row">
-          <Button onClick={onSave} disabled={saving} className="flex-1 sm:flex-none sm:min-w-48">
+          <Button type="submit" disabled={saving} className="flex-1 sm:flex-none sm:min-w-48">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
             Guardar Zarpe
           </Button>
-          <Button variant="outline" onClick={onCancel} disabled={saving} className="sm:min-w-36">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="sm:min-w-36">
             Cancelar
           </Button>
         </div>
-      </div>
+      </form>
     </Card>
   );
 };
