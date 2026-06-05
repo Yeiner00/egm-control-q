@@ -297,12 +297,12 @@ const Index = () => {
           >
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="sidebar-brand-mark h-10 w-10 rounded-[0.95rem]">
+                <div className="sidebar-brand-mark h-10 w-10 rounded-[var(--radius-md)]">
                   <Anchor className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
                   <span className="block truncate text-sm font-bold tracking-[0.08em] text-white">Administracion</span>
-                  <span className="block text-[0.72rem] font-bold uppercase tracking-[0.18em] text-teal-light">No oficial</span>
+                  <span className="block text-[0.72rem] font-bold uppercase tracking-[0.18em] text-[hsl(var(--brand-mark-fg))]">No oficial</span>
                 </div>
               </div>
               <Button
