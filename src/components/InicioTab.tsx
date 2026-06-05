@@ -386,10 +386,13 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               </div>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3 pt-4 lg:pt-3.5">
+              {/* Override supplies left-alignment (justify-start + text-left) and a custom shadow/hover
+                  for the InicioTab CTA cards. Dark-mode classes removed because the default Button
+                  variant already provides the same --primary-on-dark treatment (Task 2.1). */}
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-[hsl(var(--primary-on-dark)/0.35)] dark:bg-[hsl(var(--primary-on-dark)/0.15)] dark:text-[hsl(var(--primary-on-dark))] dark:shadow-none dark:hover:bg-[hsl(var(--primary-on-dark)/0.25)]"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90"
                 onClick={onOpenReportesManual}
               >
                 <FilePlus2 className="h-4 w-4 shrink-0" />
@@ -398,7 +401,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-[hsl(var(--primary-on-dark)/0.35)] dark:bg-[hsl(var(--primary-on-dark)/0.15)] dark:text-[hsl(var(--primary-on-dark))] dark:shadow-none dark:hover:bg-[hsl(var(--primary-on-dark)/0.25)]"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90"
                 onClick={onOpenZarpesUpload}
               >
                 <ImageUp className="h-4 w-4 shrink-0" />
@@ -407,7 +410,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90 dark:border-[hsl(var(--primary-on-dark)/0.35)] dark:bg-[hsl(var(--primary-on-dark)/0.15)] dark:text-[hsl(var(--primary-on-dark))] dark:shadow-none dark:hover:bg-[hsl(var(--primary-on-dark)/0.25)]"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90"
                 onClick={onOpenEstadistica}
               >
                 <BarChart3 className="h-4 w-4 shrink-0" />
@@ -506,7 +509,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                           <div className="text-sm font-semibold text-foreground lg:text-[0.95rem]">Reporte {report.no_reporte}</div>
                           <div className="mt-1 text-sm text-muted-foreground lg:text-[0.88rem]">{report.vehiculo || "Unidad sin identificar"}</div>
                         </div>
-                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[hsl(var(--state-info)/0.7)] bg-[hsl(var(--state-info-soft))] px-3 py-1 text-xs font-semibold leading-none text-[hsl(var(--state-info))] dark:border-[hsl(var(--state-info)/0.35)] dark:bg-[hsl(var(--state-info)/0.15)] dark:text-[hsl(var(--state-info))] lg:px-2.5 lg:py-0.5">
+                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[hsl(var(--state-info)/0.7)] bg-[hsl(var(--state-info-soft))] px-3 py-1 text-xs font-semibold leading-none text-foreground dark:border-[hsl(var(--state-info)/0.35)] dark:bg-[hsl(var(--state-info)/0.15)] dark:text-foreground lg:px-2.5 lg:py-0.5">
                           Movil
                         </div>
                       </div>
@@ -546,7 +549,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                           <div className="text-sm font-semibold text-foreground lg:text-[0.95rem]">Reporte {report.no_reporte}</div>
                           <div className="mt-1 text-sm text-muted-foreground lg:text-[0.88rem]">{report.embarcacion || "Embarcacion sin identificar"}</div>
                         </div>
-                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[hsl(var(--state-danger)/0.7)] bg-[hsl(var(--state-danger-soft))] px-3 py-1 text-xs font-semibold leading-none text-[hsl(var(--state-danger))] dark:border-[hsl(var(--state-danger)/0.35)] dark:bg-[hsl(var(--state-danger)/0.15)] dark:text-[hsl(var(--state-danger))] lg:px-2.5 lg:py-0.5">
+                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[hsl(var(--state-danger)/0.7)] bg-[hsl(var(--state-danger-soft))] px-3 py-1 text-xs font-semibold leading-none text-foreground dark:border-[hsl(var(--state-danger)/0.35)] dark:bg-[hsl(var(--state-danger)/0.15)] dark:text-foreground lg:px-2.5 lg:py-0.5">
                           Embarcacion
                         </div>
                       </div>
