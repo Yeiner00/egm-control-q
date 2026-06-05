@@ -843,7 +843,14 @@ const ReportCatalogAdmin = ({ onCatalogsChanged }: ReportCatalogAdminProps) => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <form
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSave();
+            }}
+            className="space-y-4"
+          >
             {editor?.kind === "officer" && (
               <>
                 <div className="space-y-2">
@@ -916,15 +923,15 @@ const ReportCatalogAdmin = ({ onCatalogsChanged }: ReportCatalogAdminProps) => {
                 </div>
               </>
             )}
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={closeEditor} disabled={saving}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving} className={cn("gap-2", saving && "opacity-80")}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Guardar
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeEditor} disabled={saving}>Cancelar</Button>
+              <Button type="submit" disabled={saving} className={cn("gap-2", saving && "opacity-80")}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </Card>
