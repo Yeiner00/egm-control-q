@@ -151,7 +151,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    color-scheme: light;
+    color-scheme: light dark;
   }
 
   @media (min-width: 1024px) {
