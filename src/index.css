@@ -584,7 +584,7 @@
     @apply hover:bg-destructive/10 hover:text-destructive;
   }
 
-  /* /60 is the documented "below 80" tier (commit a4b32c0) — intentional keep. */
+  /* /60 is the documented "below 80" tier (commit a4b32c0) - intentional keep. */
   .report-list-row-details {
     @apply border-t border-border/65 bg-card/60 p-3;
   }
