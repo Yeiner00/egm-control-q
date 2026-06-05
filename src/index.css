@@ -253,6 +253,7 @@
     @apply w-full max-w-none;
   }
 
+  /* Card opacity collapsed from /95 to /100 in commit a4b32c0 (three documented tiers: /100, /60, /45). */
   .panel-card {
     @apply rounded-[calc(var(--radius)+0.12rem)] border border-border/70 bg-card shadow-[0_20px_44px_-28px_rgba(15,23,42,0.34)] backdrop-blur-md;
   }
@@ -583,6 +584,7 @@
     @apply hover:bg-destructive/10 hover:text-destructive;
   }
 
+  /* /60 is the documented "below 80" tier (commit a4b32c0) — intentional keep. */
   .report-list-row-details {
     @apply border-t border-border/65 bg-card/60 p-3;
   }
@@ -766,6 +768,7 @@
     @apply text-sm leading-6 text-muted-foreground;
   }
 
+  /* Card opacity collapsed from /95 to /100 in commit a4b32c0 (three documented tiers: /100, /60, /45). */
   .operational-loader {
     @apply inline-flex items-center gap-3 rounded-[0.5rem] border border-border/70 bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.32)];
   }
@@ -787,6 +790,7 @@
     }
   }
 
+  /* Card opacity collapsed from /95 to /100 in commit a4b32c0 (three documented tiers: /100, /60, /45). */
   .data-table-shell {
     @apply overflow-hidden rounded-[calc(var(--radius)+0.04rem)] border border-border/70 bg-card;
   }

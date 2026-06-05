@@ -387,8 +387,10 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3 pt-4 lg:pt-3.5">
               {/* Override supplies left-alignment (justify-start + text-left) and a custom shadow/hover
-                  for the InicioTab CTA cards. Dark-mode classes removed because the default Button
-                  variant already provides the same --primary-on-dark treatment (Task 2.1). */}
+                  for the InicioTab CTA cards. Dark-mode classes were tokenized from raw cyan to
+                  --primary-on-dark in commit a298333 (scope expansion: cyan button dark mode shared
+                  with the default Button variant from Task 2.1) and later dropped because the default
+                  variant already provides that treatment. */}
               <Button
                 type="button"
                 size="sm"
@@ -502,6 +504,10 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                     </div>
                   )}
 
+                  {/* Movil badge below: tokenized from sky-* raw Tailwind colors to --state-info
+                      tokens in commit a298333 (scope expansion: paired with the Embarcacion
+                      badge in the next section). Text color uses --foreground for WCAG AA
+                      contrast on the soft-tint background in both light and dark modes. */}
                   {!loading && recentVehicleReports.map((report) => (
                     <article key={report.id} className="panel-subtle space-y-2 p-4 lg:space-y-1.5 lg:p-3.5">
                       <div className="flex items-start justify-between gap-3">
@@ -542,6 +548,10 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                     </div>
                   )}
 
+                  {/* Embarcacion badge below: tokenized from red-* raw Tailwind colors to
+                      --state-danger tokens in commit a298333 (scope expansion: paired with
+                      the Movil badge above). Text color uses --foreground for WCAG AA
+                      contrast on the soft-tint background in both light and dark modes. */}
                   {!loading && recentBoatReports.map((report) => (
                     <article key={report.id} className="panel-subtle space-y-2 p-4 lg:space-y-1.5 lg:p-3.5">
                       <div className="flex items-start justify-between gap-3">
@@ -632,6 +642,9 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
                 </Button>
               </div>
 
+            {/* Tokenized from raw red/blue/amber to --squad-alfa / --squad-bravo / --state-warning
+                in commit a298333 (scope expansion) for parity with the HeaderMiniCalendar squad
+                markers tokenized in commit 2c1a3ec. */}
             <div className="grid gap-3 sm:grid-cols-3 lg:gap-2.5">
               <div className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/50 px-3.5 py-2.5 lg:px-3 lg:py-2">
                 <span className="h-3 w-3 rounded-full bg-[hsl(var(--squad-alfa))]" />
