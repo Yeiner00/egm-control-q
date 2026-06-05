@@ -620,7 +620,7 @@ const ReportesTab = ({ subtabRequest, onSubtabRequestConsumed }: ReportesTabProp
             className={cn(
               "group flex min-h-[6.4rem] w-full items-start gap-3 rounded-[calc(var(--radius)-0.08rem)] border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "border-primary/70 bg-primary/5 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.4)]"
+                ? "border-primary/70 bg-primary/5 shadow-[var(--shadow-md)]"
                 : "border-border/80 bg-background/55 hover:border-primary/40 hover:bg-muted/45",
             )}
             aria-pressed={active}

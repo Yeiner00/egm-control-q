@@ -222,15 +222,15 @@
   }
 
   .panel-header {
-    @apply border-b border-white/10 bg-navy/95 text-white shadow-[0_12px_40px_-20px_rgba(15,23,42,0.9)] backdrop-blur-xl supports-[backdrop-filter]:bg-navy/90;
+    @apply border-b border-white/10 bg-navy/95 text-white shadow-[var(--shadow-md)] backdrop-blur-xl supports-[backdrop-filter]:bg-navy/90;
   }
 
   .top-header {
-    @apply sticky top-0 z-40 border-b border-slate-200/80 bg-slate-50 text-slate-900 shadow-[0_10px_28px_-22px_rgba(15,23,42,0.16)] backdrop-blur-xl supports-[backdrop-filter]:bg-slate-50;
+    @apply sticky top-0 z-40 border-b border-slate-200/80 bg-slate-50 text-slate-900 shadow-[var(--shadow-sm)] backdrop-blur-xl supports-[backdrop-filter]:bg-slate-50;
   }
 
   .dark .top-header {
-    @apply border-white/10 bg-navy text-white shadow-[0_12px_30px_-18px_rgba(2,8,23,0.92)] supports-[backdrop-filter]:bg-navy;
+    @apply border-white/10 bg-navy text-white shadow-[var(--shadow-md)] supports-[backdrop-filter]:bg-navy;
   }
 
   .app-title-lockup {
@@ -255,7 +255,7 @@
 
   /* Card opacity collapsed from /95 to /100 in commit a4b32c0 (three documented tiers: /100, /60, /45). */
   .panel-card {
-    @apply rounded-[calc(var(--radius)+0.12rem)] border border-border/70 bg-card shadow-[0_20px_44px_-28px_rgba(15,23,42,0.34)] backdrop-blur-md;
+    @apply rounded-[calc(var(--radius)+0.12rem)] border border-border/70 bg-card shadow-[var(--shadow-md)] backdrop-blur-md;
   }
 
   .panel-subtle {
@@ -770,7 +770,7 @@
 
   /* Card opacity collapsed from /95 to /100 in commit a4b32c0 (three documented tiers: /100, /60, /45). */
   .operational-loader {
-    @apply inline-flex items-center gap-3 rounded-[var(--radius-md)] border border-border/70 bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.32)];
+    @apply inline-flex items-center gap-3 rounded-[var(--radius-md)] border border-border/70 bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-[var(--shadow-sm)];
   }
 
   .deferred-render-region {
@@ -903,7 +903,7 @@
   }
 
   .sidebar-user-card {
-    @apply mx-auto flex w-full items-center justify-center rounded-[var(--radius-md)] border border-slate-200/90 bg-white px-3 py-3 text-center shadow-[0_14px_28px_-26px_rgba(15,23,42,0.3)];
+    @apply mx-auto flex w-full items-center justify-center rounded-[var(--radius-md)] border border-slate-200/90 bg-white px-3 py-3 text-center shadow-[var(--shadow-md)];
   }
 
   .dark .sidebar-user-card {
@@ -984,7 +984,7 @@
   }
 
   .header-icon-button {
-    @apply h-10 w-10 border border-slate-300 bg-white text-slate-700 shadow-[0_6px_20px_-18px_rgba(15,23,42,0.22)] hover:bg-slate-100 hover:text-slate-900;
+    @apply h-10 w-10 border border-slate-300 bg-white text-slate-700 shadow-[var(--shadow-sm)] hover:bg-slate-100 hover:text-slate-900;
   }
 
   .dark .header-icon-button {

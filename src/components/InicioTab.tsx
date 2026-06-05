@@ -394,7 +394,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[var(--shadow-sm)] hover:bg-primary/90"
                 onClick={onOpenReportesManual}
               >
                 <FilePlus2 className="h-4 w-4 shrink-0" />
@@ -403,7 +403,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[var(--shadow-sm)] hover:bg-primary/90"
                 onClick={onOpenZarpesUpload}
               >
                 <ImageUp className="h-4 w-4 shrink-0" />
@@ -412,7 +412,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               <Button
                 type="button"
                 size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.6)] hover:bg-primary/90"
+                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[var(--shadow-sm)] hover:bg-primary/90"
                 onClick={onOpenEstadistica}
               >
                 <BarChart3 className="h-4 w-4 shrink-0" />
