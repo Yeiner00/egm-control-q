@@ -4,6 +4,51 @@
 **Status:** Approved (awaiting implementation plan)
 **Scope:** Design system + shared components
 **Brief:** Sobria, seria, moderna. Consistente en toda la app, paridad light/dark.
+**Skill applied:** `design-taste-frontend` v2 (Taste Skill)
+
+## Design Read & Dials
+
+Following Section 0 (Brief Inference) and Section 1 (Three Dials) of the Taste Skill:
+
+> **Reading this as: redesign-preserve of a trust-first serious B2B admin panel for maritime operations (zarpes, vehicle/boat reports, statistics, Excel importer), with a sober navy + teal language, Manrope typography, and dual light/dark mode, leaning toward shadcn/ui tokens + restrained motion.**
+
+| Dial | Value | Reasoning |
+|---|---|---|
+| `DESIGN_VARIANCE` | **3** | Internal admin, not a marketing page. Predictable, symmetrical grid; user scans fast. |
+| `MOTION_INTENSITY` | **2** | Trust-first tool. No scrolltelling, no marquee, no GSAP. Hover/focus micro-interactions only. Honors `prefers-reduced-motion` by default. |
+| `VISUAL_DENSITY` | **6** | Data-heavy dashboard. Standard web-app spacing (`py-4` to `py-8`). Cards used where they communicate real hierarchy; spacing/separators used otherwise. |
+
+**Redesign mode (Section 11.A):** **Preserve.** Modernise the design system and shared components without changing information architecture, copy voice (Spanish, sober), brand identity (navy + teal, Manrope), or accessibility wins (focus states, contrast, keyboard nav). The brief is "sober, serious, modern and consistent" — that is a token-and-component job, not a greenfield.
+
+**Why shadcn/ui (Section 2.A):** the project is "a modern SaaS where you own the components." shadcn/ui is the right call. The skill's honesty rule applies: customise radii, colors, shadows, typography. Never ship the default state. This spec is the customisation.
+
+**Why not the rest of Section 2.A:** the project is not a Microsoft/Fluent, IBM/Carbon, Atlassian, or Shopify/Polaris surface. Do not introduce those.
+
+## Scope of the Taste Skill applied to this spec
+
+The Taste Skill is **explicitly out of scope for dashboards and admin panels** (Section 13). It is built for landing pages, portfolios, and marketing sites. We cherry-pick the principles that ARE universal and apply them here:
+
+**Apply (universal):**
+
+- The three Locks: Color Consistency Lock (Section 4.2), Shape Consistency Lock (Section 4.4), Page Theme Lock (Section 4.11).
+- AI Tells (Section 9): em-dash ban, no Inter as default, no AI-purple, no three-equal-card features, no fake-perfect numbers, no generic Jane Doe / Acme names, no startup-slop filler verbs, no pure black/white.
+- Dark Mode Protocol (Section 8): token strategy, hierarchy parity, brand fidelity, test in both modes.
+- Audit-first protocol (Section 11.B) and Preservation rules (Section 11.C).
+- Modernisation Levers in priority order (Section 11.D): typography → spacing → color → motion.
+- Pre-Flight Check (Section 14), minus the marketing-only items.
+
+**Do not apply (marketing-only):**
+
+- Hero discipline (Section 4.7): no marketing hero here.
+- Eyebrow restraint cap (Section 4.7): admin panels use eyebrows per section by convention; the cap is for marketing.
+- Split-Header Ban, Zigzag Alternation Cap, Bento Cell Count Rule (Section 4.7): no marketing sections.
+- Marquee max-one-per-page (Section 5): no marketing marquee.
+- Liquid Glass / Magnetic / Kinetic / GSAP ScrollTrigger patterns (Sections 5, 5.A, 5.B): no scrolltelling in an admin.
+- Premium-consumer palette ban (Section 4.2): the project is not premium-consumer.
+- Hero stack discipline, Hero top padding cap, Hero font-scale discipline (Section 4.7): no marketing hero.
+- Section-Layout-Repetition check (Section 4.7): admin tabs use the same layout family (panel + form) by design; not a marketing-page concern.
+
+These are tracked so the spec does not accidentally import marketing-page constraints that hurt the admin.
 
 ## Background
 
@@ -72,13 +117,26 @@ The alfa/bravo shift markers and the holiday/approved states use raw red/blue/am
 - A light/dark parity checklist that anyone on the team can run.
 - The skill Taste's three locks (color, shape, page theme) verifiable in the diff.
 
+**Targeted evolution (Section 11.E):** the existing IA, content, and SEO of EGM Admin are sound. We apply Modernisation Levers 1-4 (typography → spacing → color → motion) from Section 11.D and stop. Levers 5 (hero recomposition) and 6 (full block replacement) are out of scope because there is no marketing surface to recompose, and the existing panels/forms are not "unsalvageable."
+
 ## Non-goals
 
 - No new component library (no Radix Themes, no shadcn Blocks add-ons).
-- No typography change (Manrope stays).
-- No copy or content changes.
+- No typography change (Manrope stays; Section 9.B bans Inter as default, and we are already on Manrope).
+- No copy or content changes (Spanish strings stay; Section 11.C preservation rule).
 - No per-tab redesign (out of scope for this iteration).
 - No automated visual regression test in this iteration (mentioned as follow-up).
+- No new motion patterns (Section 5.D: no `window.addEventListener("scroll", ...)` in React state, no scrolltelling, no marquee). We tokenize existing motion and stop.
+
+## What never changes (Section 11.F)
+
+Per the Taste Skill, the following are explicit preservation constraints. Any change to one of these needs explicit user approval, not a routine refactor.
+
+- **Information architecture** — route slugs, primary nav labels, tab ordering, form field names and order (breaks analytics + autofill).
+- **Brand identity** — navy + teal language, Manrope typography, the EGM Admin wordmark, the `Sidebar` logo treatment.
+- **Copy voice** — Spanish, sober, operational. No filler verbs, no startup-speak.
+- **Legal / consent / cookie copy** — already present in `Login.tsx` and any consent surface. Do not rewrite.
+- **Accessibility wins already shipped** — focus-visible rings, keyboard nav in the calendar, contrast in the Login page. Do not regress.
 
 ## Design
 
@@ -99,7 +157,7 @@ Add to `:root` and `.dark` as appropriate. Values are HSL components to match th
 --text-2xl: 1.5rem;     /* 24px */
 ```
 
-**Radius scale** (replaces the 8 micro-variants):
+**Radius scale** (replaces the 8 micro-variants; satisfies the Shape Consistency Lock from Section 4.4):
 
 ```css
 --radius-sm: 0.375rem;  /* 6px */
@@ -108,6 +166,8 @@ Add to `:root` and `.dark` as appropriate. Values are HSL components to match th
 ```
 
 `--radius` is kept as an alias of `--radius-md` for backward compatibility with `border-radius: var(--radius)`.
+
+Rule: components pick from the three documented sizes. Any new radius needs explicit justification in the PR description.
 
 **Shadow scale** (replaces ~15 ad-hoc `shadow-[...]` literals):
 
@@ -120,7 +180,7 @@ Add to `:root` and `.dark` as appropriate. Values are HSL components to match th
 
 Dark-mode overrides apply the same HSL hue with lower alpha (matches the existing `.dark` shadows).
 
-**Motion**:
+**Motion** (tokenized to satisfy Section 5.D forbidden patterns and Section 6.B reduced-motion defaults):
 
 ```css
 --motion-fast: 150ms;
@@ -128,6 +188,14 @@ Dark-mode overrides apply the same HSL hue with lower alpha (matches the existin
 --motion-slow: 300ms;
 --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 ```
+
+Use rule (also enforced in Section 2.1):
+
+- Color/border/background transitions: `--motion-fast` + `--ease-standard`.
+- Transform/box-shadow transitions: `--motion-base` + `--ease-standard`.
+- Layout transitions (rare): `--motion-slow` + `--ease-standard`.
+
+Wrap any `MOTION_INTENSITY > 3` motion in a `prefers-reduced-motion` guard. Since this project sits at `MOTION_INTENSITY = 2`, the guard is optional, but the tokens make the upgrade path explicit.
 
 **Status colors** (replaces raw `red-/amber-/emerald-`):
 
@@ -188,14 +256,14 @@ Dark-mode overrides apply the same HSL hue with lower alpha (matches the existin
 .dark { --brand-mark-fg: var(--teal-light); }
 ```
 
-#### 1.2 Page Theme Lock decision
+#### 1.2 Page Theme Lock decision (Section 4.11 + Section 4.2)
 
 `--primary` stays as the brand accent in both modes. Currently dark `--primary` is cyan (`193 84% 56%`); we move that value to a new token `--primary-on-dark`. The rule becomes:
 
 - In light mode, interactive elements (CTAs, active tabs, primary buttons) use `--primary` (navy).
 - In dark mode, the same elements use `--primary-on-dark` (the cyan). Brand chrome (logo, app title, sidebar brand mark) uses `--primary` in both modes via the `--brand-mark-fg` token.
 
-This satisfies the Color Consistency Lock: one brand accent in both modes (navy on chrome) plus one token for high-contrast interactive elements in dark. Future theme changes update `--primary-on-dark` independently.
+This satisfies the **Page Theme Lock** (Section 4.11) — one accent of brand identity across the page, no mid-page theme flip — and the **Color Consistency Lock** (Section 4.2) — one accent color used identically across sections (navy on chrome in both modes; the dark interactive token is a contrast-corrected variant of the same brand, not a second accent). Future theme changes update `--primary-on-dark` independently without touching the chrome.
 
 #### 1.3 shadcn primitive migration
 
@@ -265,6 +333,37 @@ Run on every tab (Inicio, Zarpes, Reportes, Estadísticas, Estadística) in both
 - `npm run build` — no type errors, build succeeds.
 - Manual visual sweep per the parity checklist.
 - No new automated visual regression test in this iteration. A Playwright screenshot test for light/dark parity is listed as a follow-up.
+- **Copy self-audit (Section 14):** re-read every visible string the change touches. Flag and rewrite filler verbs (elevate, seamlessly, unleash, etc.) and any AI-hallucinated phrasing. Spanish copy stays.
+- **Em-dash sweep (Section 9.G):** `rg -nP '[\x{2014}\x{2013}]' src/` returns zero matches in the diff. (Already verified pre-spec.)
+- **AI Tells sweep (Section 9):** `rg -nE '\\b(Inter|Acme|Jane Doe|elevate|seamlessly|unleash|cutting-edge|state-of-the-art|Quietly in use at)\\b' src/` returns no new matches. Acme/Inter defaults are not used; we are on Manrope, so this is a defensive check.
+- **One design system per project (Section 14):** shadcn/ui only. No Material, Radix Themes, or Atlassian imports added.
+
+## Pre-Flight Check (Section 14, admin-appropriate subset)
+
+This is the gate before declaring a phase done. Marketing-only checks from the Skill's matrix (hero discipline, eyebrow cap, split-header ban, marquee, GSAP sticky-stack, etc.) are intentionally excluded — see "Scope of the Taste Skill applied to this spec" above.
+
+**Universal checks (must pass every phase):**
+
+- [ ] **Em-dash ban (Section 9.G):** zero `—` or `–` in the diff. Use hyphen, period, or comma.
+- [ ] **No Inter as default (Section 9.B):** font stack still Manrope. No new font import.
+- [ ] **Color Consistency Lock (Section 4.2):** no new accent color introduced. One navy on chrome, one `--primary-on-dark` for dark interactive elements.
+- [ ] **Shape Consistency Lock (Section 4.4):** new radii pick from `--radius-sm/md/lg`. No new raw `rounded-[0.XXrem]`.
+- [ ] **Page Theme Lock (Section 4.11):** no component conditionally inverts its own theme (e.g., a "dark card" inside the light page or vice versa).
+- [ ] **No AI-purple / no glassmorphism slop (Section 9.A):** palette stays navy + teal; no `backdrop-blur` panels added in this iteration.
+- [ ] **No pure black/white (Section 9.A):** chrome uses `bg-navy` + `bg-slate-50`; never `bg-black` or `bg-white` outside the Login page hero (already a one-off).
+- [ ] **No Jane Doe / Acme / generic names (Section 9.D):** example data uses domain names (capitan, embarcacion, zarpe, mota) — already the case.
+- [ ] **No startup-slop filler verbs (Section 9.D):** Spanish copy uses concrete verbs (crear, registrar, marcar, eliminar), not anglicisms.
+- [ ] **One design system per project (Section 14):** shadcn/ui only. No Material or Polaris imports.
+- [ ] **Empty/loading/error states (Section 14):** any new async surface has the three states. The current `Inbox`-style tab and `ReportUploader` already do; preserve.
+- [ ] **Form contrast (Section 14):** new inputs/placeholders/focus rings clear WCAG AA 4.5:1 on the section background (manual check against the parity checklist).
+- [ ] **Motion isolated in client-leaf + cleanup (Section 14):** the project does not use `useEffect`-driven scroll listeners, so this is N/A; new motion uses CSS transitions keyed to the motion tokens.
+
+**Tailwind lints (run mechanically):**
+
+- `rg -nP 'class="[^"]*\\b(bg|text|border|ring)-(slate|red|blue|amber|emerald|cyan|sky|teal|indigo|violet|purple|fuchsia|pink|rose)-[0-9]+' src/components src/index.css` — only the chrome exceptions (`bg-navy`, `bg-slate-50` in `src/index.css` for the sidebar/top-header) should match. Any new hit in a feature component fails the check.
+- `rg -nP 'rounded-\\[0-9' src/components src/index.css` — only `--radius-sm/md/lg` references or pre-existing values should match.
+- `rg -nP 'shadow-\\[0_' src/components src/index.css` — only `--shadow-xs/sm/md/lg` references or pre-existing values should match.
+- `rg -nP 'transition-\\[(color|background-color|border-color|box-shadow|transform)' src/components src/index.css` — should only appear in pre-existing utilities; new motion should use the tokenized shorthand.
 
 ## Risks & mitigations
 
