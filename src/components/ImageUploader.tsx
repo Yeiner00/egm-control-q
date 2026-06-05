@@ -122,7 +122,7 @@ const ImageUploader = ({ onExtracted, showIntroHeader = true }: Props) => {
           <div className="relative overflow-hidden rounded-[calc(var(--radius)+0.1rem)] border border-border/80">
             <img src={preview} alt="Procesando" className="max-h-64 w-full object-cover opacity-45" />
             <div className="absolute inset-0 flex items-center justify-center bg-navy/15 backdrop-blur-[2px]">
-              <div className="operational-loader bg-card/96">
+                <div className="operational-loader bg-card">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 <span>{aiMessage || "Extrayendo datos del documento..."}</span>
               </div>
