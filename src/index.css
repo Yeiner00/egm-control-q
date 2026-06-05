@@ -55,6 +55,57 @@
     --warning-foreground: 0 0% 100%;
     --success: 152 60% 40%;
     --success-foreground: 0 0% 100%;
+
+    /* --- Type scale --- */
+    --text-xs: 0.75rem;     /* 12px */
+    --text-sm: 0.875rem;    /* 14px */
+    --text-base: 1rem;      /* 16px */
+    --text-lg: 1.125rem;    /* 18px */
+    --text-xl: 1.25rem;     /* 20px */
+    --text-2xl: 1.5rem;     /* 24px */
+
+    /* --- Radius scale (Shape Consistency Lock) --- */
+    --radius-sm: 0.375rem;  /* 6px */
+    --radius-md: 0.5rem;    /* 8px - current --radius */
+    --radius-lg: 0.75rem;   /* 12px */
+
+    /* --- Shadow scale --- */
+    --shadow-xs: 0 1px 2px 0 hsl(214 38% 16% / 0.06);
+    --shadow-sm: 0 6px 16px -10px hsl(214 38% 16% / 0.18);
+    --shadow-md: 0 14px 32px -18px hsl(214 38% 16% / 0.32);
+    --shadow-lg: 0 24px 56px -28px hsl(214 38% 16% / 0.44);
+
+    /* --- Motion --- */
+    --motion-fast: 150ms;
+    --motion-base: 200ms;
+    --motion-slow: 300ms;
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+    /* --- Status colors --- */
+    --state-success: 152 60% 40%;
+    --state-success-fg: 0 0% 100%;
+    --state-success-soft: 152 60% 92%;
+    --state-warning: 38 92% 50%;
+    --state-warning-fg: 0 0% 100%;
+    --state-warning-soft: 38 92% 94%;
+    --state-danger: 0 72% 51%;
+    --state-danger-fg: 0 0% 100%;
+    --state-danger-soft: 0 72% 95%;
+    --state-info: 203 68% 42%;
+    --state-info-fg: 0 0% 100%;
+    --state-info-soft: 203 68% 94%;
+
+    /* --- Squad tokens (domain meaning preserved) --- */
+    --squad-alfa: 0 72% 51%;
+    --squad-alfa-soft: 0 72% 95%;
+    --squad-alfa-fg: 0 72% 30%;
+    --squad-bravo: 217 80% 48%;
+    --squad-bravo-soft: 217 80% 95%;
+    --squad-bravo-fg: 217 80% 28%;
+
+    /* --- Brand mark (Page Theme Lock) --- */
+    --brand-mark-fg: var(--primary);
+    --primary-on-dark: 193 84% 56%;
   }
 
   .dark {
@@ -77,6 +128,23 @@
     --border: 214 20% 24%;
     --input: 214 20% 24%;
     --ring: 193 84% 56%;
+
+    --state-success: 152 50% 50%;
+    --state-success-soft: 152 30% 18%;
+    --state-warning: 38 90% 60%;
+    --state-warning-soft: 38 30% 18%;
+    --state-danger: 0 70% 60%;
+    --state-danger-soft: 0 30% 20%;
+    --state-info: 203 70% 60%;
+    --state-info-soft: 203 30% 20%;
+
+    --squad-alfa: 0 70% 65%;
+    --squad-alfa-soft: 0 30% 22%;
+    --squad-alfa-fg: 0 70% 85%;
+    --squad-bravo: 217 80% 70%;
+    --squad-bravo-soft: 217 30% 22%;
+    --squad-bravo-fg: 217 80% 88%;
+    --brand-mark-fg: var(--teal-light);
   }
 }
 
