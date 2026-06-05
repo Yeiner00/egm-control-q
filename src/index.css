@@ -611,14 +611,14 @@
   }
 
   .proposal-report-card {
-    @apply flex h-full flex-col overflow-hidden rounded-[0.5rem] border bg-white text-slate-600 transition-colors duration-150;
+    @apply flex h-full flex-col overflow-hidden rounded-[0.5rem] border bg-card text-foreground transition-colors duration-150;
     border-color: rgb(226 232 240 / 0.78);
     box-shadow: 0 20px 48px -34px rgba(15, 23, 42, 0.52), 0 1px 2px rgba(15, 23, 42, 0.04);
     container-type: inline-size;
   }
 
   .dark .proposal-report-card {
-    @apply border-white/10 bg-card text-slate-300 shadow-none;
+    @apply border-white/10 bg-card text-foreground shadow-none;
   }
 
   .proposal-report-main {
@@ -635,12 +635,12 @@
   }
 
   .proposal-report-station {
-    @apply inline-flex w-fit max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[0.3rem] bg-slate-100 px-2.5 py-1 text-[0.84rem] font-extrabold uppercase leading-none text-slate-800;
+    @apply inline-flex w-fit max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[0.3rem] bg-muted px-2.5 py-1 text-[0.84rem] font-extrabold uppercase leading-none text-foreground;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
   }
 
   .proposal-report-meta-item {
-    @apply inline-flex min-w-0 items-center gap-2 whitespace-nowrap text-[0.9rem] font-medium leading-none text-slate-500;
+    @apply inline-flex min-w-0 items-center gap-2 whitespace-nowrap text-[0.9rem] font-medium leading-none text-muted-foreground;
   }
 
   .proposal-report-meta-text {
@@ -648,12 +648,12 @@
   }
 
   .proposal-report-icon {
-    @apply h-4 w-4 shrink-0 text-slate-600;
+    @apply h-4 w-4 shrink-0 text-foreground;
     stroke-width: 1.9;
   }
 
   .proposal-report-divider {
-    @apply my-4 h-px bg-slate-200/90;
+    @apply my-4 h-px bg-border/70;
   }
 
   .proposal-report-header-divider {
@@ -665,7 +665,7 @@
   }
 
   .proposal-missing-chip {
-    @apply inline-flex items-center whitespace-nowrap rounded-[0.28rem] border border-warning/35 bg-warning/10 px-2 py-1 text-[0.76rem] font-semibold leading-none text-slate-800;
+    @apply inline-flex items-center whitespace-nowrap rounded-[0.28rem] border border-warning/35 bg-warning/10 px-2 py-1 text-[0.76rem] font-semibold leading-none text-foreground;
   }
 
   .proposal-report-body {
@@ -681,11 +681,11 @@
   }
 
   .proposal-report-label {
-    @apply shrink-0 font-medium text-slate-500;
+    @apply shrink-0 font-medium text-muted-foreground;
   }
 
   .proposal-report-value {
-    @apply min-w-0 font-extrabold text-slate-800;
+    @apply min-w-0 font-extrabold text-foreground;
   }
 
   .proposal-report-role .proposal-report-value {
@@ -702,7 +702,7 @@
   }
 
   .proposal-report-motives-label {
-    @apply flex items-center gap-2 text-[0.9rem] font-medium leading-none text-slate-500;
+    @apply flex items-center gap-2 text-[0.9rem] font-medium leading-none text-muted-foreground;
   }
 
   .proposal-report-tags {
@@ -710,7 +710,7 @@
   }
 
   .proposal-report-tag {
-    @apply inline-flex max-w-full items-center rounded-[0.3rem] bg-slate-100 px-2.5 py-1 text-[0.8rem] font-medium leading-none text-slate-500;
+    @apply inline-flex max-w-full items-center rounded-[0.3rem] bg-muted px-2.5 py-1 text-[0.8rem] font-medium leading-none text-muted-foreground;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
@@ -719,50 +719,20 @@
   }
 
   .proposal-report-toggle {
-    @apply h-7 rounded-[0.32rem] px-0 text-[0.84rem] font-medium text-slate-500 hover:bg-transparent hover:text-slate-800;
+    @apply h-7 rounded-[0.32rem] px-0 text-[0.84rem] font-medium text-muted-foreground hover:bg-transparent hover:text-foreground;
   }
 
   .proposal-report-action {
-    @apply h-7 w-7 rounded-[0.32rem] text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60;
+    @apply h-7 w-7 rounded-[0.32rem] text-foreground hover:bg-muted hover:text-foreground disabled:opacity-60;
   }
 
   .proposal-report-notes {
-    @apply border-t border-slate-200/90 bg-slate-50/70 px-5 py-4 sm:px-7;
+    @apply border-t border-border/70 bg-muted/70 px-5 py-4 sm:px-7;
   }
 
   .dark .proposal-report-station,
   .dark .proposal-report-tag {
-    @apply bg-white/10 text-slate-200;
     box-shadow: none;
-  }
-
-  .dark .proposal-report-meta-item,
-  .dark .proposal-report-label,
-  .dark .proposal-report-motives-label,
-  .dark .proposal-report-toggle {
-    @apply text-slate-400;
-  }
-
-  .dark .proposal-report-icon,
-  .dark .proposal-report-action {
-    @apply text-slate-300;
-  }
-
-  .dark .proposal-report-value,
-  .dark .proposal-missing-chip {
-    @apply text-slate-100;
-  }
-
-  .dark .proposal-report-divider {
-    @apply bg-white/10;
-  }
-
-  .dark .proposal-report-action {
-    @apply hover:bg-white/10 hover:text-white;
-  }
-
-  .dark .proposal-report-toggle {
-    @apply hover:text-white;
   }
 
   .dark .proposal-report-notes {
