@@ -120,7 +120,15 @@ const ImageUploader = ({ onExtracted, showIntroHeader = true }: Props) => {
       <div className="space-y-4 p-5 sm:p-6 lg:p-4">
         {extracting && preview ? (
           <div className="relative overflow-hidden rounded-[calc(var(--radius)+0.1rem)] border border-border/80">
-            <img src={preview} alt="Procesando" className="max-h-64 w-full object-cover opacity-45" />
+            <img
+              src={preview}
+              alt="Procesando"
+              width={1024}
+              height={256}
+              loading="lazy"
+              decoding="async"
+              className="max-h-64 w-full object-cover opacity-45"
+            />
             <div className="absolute inset-0 flex items-center justify-center bg-navy/15 backdrop-blur-[2px]">
                 <div className="operational-loader bg-card">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
