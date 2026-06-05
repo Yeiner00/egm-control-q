@@ -854,7 +854,7 @@
   }
 
   .sidebar-nav-item {
-    @apply relative flex w-full flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border border-transparent px-1 py-2 text-center text-slate-400 transition-all duration-200 hover:text-slate-900;
+    @apply relative flex w-full flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border border-transparent px-1 py-2 text-center text-slate-400 transition-colors duration-150 hover:text-slate-900;
   }
 
   .dark .sidebar-nav-item {
