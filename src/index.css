@@ -254,7 +254,7 @@
   }
 
   .panel-card {
-    @apply rounded-[calc(var(--radius)+0.12rem)] border border-border/70 bg-card/95 shadow-[0_20px_44px_-28px_rgba(15,23,42,0.34)] backdrop-blur-md;
+    @apply rounded-[calc(var(--radius)+0.12rem)] border border-border/70 bg-card shadow-[0_20px_44px_-28px_rgba(15,23,42,0.34)] backdrop-blur-md;
   }
 
   .panel-subtle {
@@ -584,7 +584,7 @@
   }
 
   .report-list-row-details {
-    @apply border-t border-border/65 bg-card/65 p-3;
+    @apply border-t border-border/65 bg-card/60 p-3;
   }
 
   .report-list-row-notes {
@@ -767,7 +767,7 @@
   }
 
   .operational-loader {
-    @apply inline-flex items-center gap-3 rounded-[0.5rem] border border-border/70 bg-card/95 px-4 py-2 text-sm font-medium text-muted-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.32)];
+    @apply inline-flex items-center gap-3 rounded-[0.5rem] border border-border/70 bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.32)];
   }
 
   .deferred-render-region {
@@ -788,7 +788,7 @@
   }
 
   .data-table-shell {
-    @apply overflow-hidden rounded-[calc(var(--radius)+0.04rem)] border border-border/70 bg-card/95;
+    @apply overflow-hidden rounded-[calc(var(--radius)+0.04rem)] border border-border/70 bg-card;
   }
 
   .data-table-scroll-hint {
