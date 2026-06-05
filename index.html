@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0b0b0d" media="(prefers-color-scheme: dark)" data-fallback="#0b0b0d" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" data-fallback="#ffffff" />
     <title>EGM Admin</title>
     <meta
       name="description"
@@ -22,9 +25,22 @@
       name="twitter:description"
       content="Gestión de zarpes y reportes operativos con integración a Supabase."
     />
+    <link rel="preconnect" href="https://vsiyibdyuwgsejcwjeht.supabase.co" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+    />
   </head>
 
   <body>
+    <a href="#workspace" class="skip-link">Saltar al contenido principal</a>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
