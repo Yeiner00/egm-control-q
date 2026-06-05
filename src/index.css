@@ -321,11 +321,11 @@
   }
 
   .totals-summary-card {
-    @apply flex items-start gap-2 rounded-[0.34rem] border border-border/60 bg-background/80 px-3 py-2.5;
+    @apply flex items-start gap-2 rounded-[var(--radius-sm)] border border-border/60 bg-background/80 px-3 py-2.5;
   }
 
   .totals-summary-icon {
-    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.3rem] bg-primary/10 text-primary;
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary;
   }
 
   .totals-summary-label {
@@ -349,7 +349,7 @@
   }
 
   .totals-list-card {
-    @apply grid gap-2 rounded-[0.34rem] border border-border/60 bg-background/70 px-3 py-2.5;
+    @apply grid gap-2 rounded-[var(--radius-sm)] border border-border/60 bg-background/70 px-3 py-2.5;
     grid-template-columns: minmax(0, 1fr) max-content;
   }
 
@@ -381,11 +381,11 @@
   }
 
   .totals-unit-icon {
-    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.3rem] border border-primary/15 bg-primary/10 text-primary;
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-primary/15 bg-primary/10 text-primary;
   }
 
   .totals-copy-button {
-    @apply h-7 w-7 rounded-[0.3rem] border border-transparent px-0 text-muted-foreground hover:border-border/60 hover:bg-background/80 hover:text-foreground;
+    @apply h-7 w-7 rounded-[var(--radius-sm)] border border-transparent px-0 text-muted-foreground hover:border-border/60 hover:bg-background/80 hover:text-foreground;
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
@@ -398,7 +398,7 @@
   }
 
   .totals-chip {
-    @apply inline-flex items-center rounded-[0.28rem] border border-border/60 bg-background px-1.5 py-0.5 text-[0.75rem] font-medium text-foreground;
+    @apply inline-flex items-center rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-0.5 text-[0.75rem] font-medium text-foreground;
   }
 
   .totals-chip-total {
@@ -410,7 +410,7 @@
   }
 
   .totals-role-card {
-    @apply grid gap-2 rounded-[0.34rem] border border-border/60 bg-background/70 px-3 py-2.5;
+    @apply grid gap-2 rounded-[var(--radius-sm)] border border-border/60 bg-background/70 px-3 py-2.5;
     grid-template-columns: minmax(0, 1fr) max-content;
   }
 
@@ -421,7 +421,7 @@
   }
 
   .totals-role-icon {
-    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.3rem] border border-primary/15 bg-primary/10 text-primary;
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-primary/15 bg-primary/10 text-primary;
   }
 
   .totals-role-title {
@@ -457,11 +457,11 @@
   }
 
   .section-icon-shell {
-    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.42rem] border border-border/70 bg-muted/45 text-primary;
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-border/70 bg-muted/45 text-primary;
   }
 
   .report-list-row {
-    @apply overflow-hidden rounded-[0.46rem] border border-border/75 bg-background/70 text-foreground transition-colors duration-150;
+    @apply overflow-hidden rounded-[var(--radius-md)] border border-border/75 bg-background/70 text-foreground transition-colors duration-150;
     box-shadow: 0 14px 34px -30px rgba(15, 23, 42, 0.48);
     container-type: inline-size;
   }
@@ -484,7 +484,7 @@
   }
 
   .report-list-trigger {
-    @apply flex min-w-0 items-center gap-3 rounded-[0.36rem] p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+    @apply flex min-w-0 items-center gap-3 rounded-[var(--radius-sm)] p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
   }
 
   button.report-list-trigger {
@@ -496,7 +496,7 @@
   }
 
   .report-list-status {
-    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.32rem] border border-primary/15 bg-primary/10 text-primary;
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-primary/15 bg-primary/10 text-primary;
   }
 
   .report-list-row-error .report-list-status {
@@ -532,7 +532,7 @@
   }
 
   .report-list-station {
-    @apply inline-flex max-w-full items-center truncate rounded-[0.28rem] bg-muted px-2 py-0.5 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-foreground;
+    @apply inline-flex max-w-full items-center truncate rounded-[var(--radius-sm)] bg-muted px-2 py-0.5 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-foreground;
   }
 
   .report-list-facts {
@@ -569,7 +569,7 @@
   }
 
   .report-list-tag {
-    @apply inline-flex max-w-full items-center truncate rounded-[0.28rem] bg-muted px-2 py-0.5 text-[0.75rem] font-medium text-muted-foreground;
+    @apply inline-flex max-w-full items-center truncate rounded-[var(--radius-sm)] bg-muted px-2 py-0.5 text-[0.75rem] font-medium text-muted-foreground;
   }
 
   .report-list-actions {
@@ -577,7 +577,7 @@
   }
 
   .report-list-action {
-    @apply h-8 w-8 rounded-[0.32rem] text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-60;
+    @apply h-8 w-8 rounded-[var(--radius-sm)] text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-60;
   }
 
   .report-list-action-danger {
@@ -613,7 +613,7 @@
   }
 
   .proposal-report-card {
-    @apply flex h-full flex-col overflow-hidden rounded-[0.5rem] border bg-card text-foreground transition-colors duration-150;
+    @apply flex h-full flex-col overflow-hidden rounded-[var(--radius-md)] border bg-card text-foreground transition-colors duration-150;
     border-color: rgb(226 232 240 / 0.78);
     box-shadow: 0 20px 48px -34px rgba(15, 23, 42, 0.52), 0 1px 2px rgba(15, 23, 42, 0.04);
     container-type: inline-size;
@@ -637,7 +637,7 @@
   }
 
   .proposal-report-station {
-    @apply inline-flex w-fit max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[0.3rem] bg-muted px-2.5 py-1 text-[0.84rem] font-extrabold uppercase leading-none text-foreground;
+    @apply inline-flex w-fit max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-[0.84rem] font-extrabold uppercase leading-none text-foreground;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
   }
 
@@ -667,7 +667,7 @@
   }
 
   .proposal-missing-chip {
-    @apply inline-flex items-center whitespace-nowrap rounded-[0.28rem] border border-warning/35 bg-warning/10 px-2 py-1 text-[0.76rem] font-semibold leading-none text-foreground;
+    @apply inline-flex items-center whitespace-nowrap rounded-[var(--radius-sm)] border border-warning/35 bg-warning/10 px-2 py-1 text-[0.76rem] font-semibold leading-none text-foreground;
   }
 
   .proposal-report-body {
@@ -712,7 +712,7 @@
   }
 
   .proposal-report-tag {
-    @apply inline-flex max-w-full items-center rounded-[0.3rem] bg-muted px-2.5 py-1 text-[0.8rem] font-medium leading-none text-muted-foreground;
+    @apply inline-flex max-w-full items-center rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-[0.8rem] font-medium leading-none text-muted-foreground;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
@@ -721,11 +721,11 @@
   }
 
   .proposal-report-toggle {
-    @apply h-7 rounded-[0.32rem] px-0 text-[0.84rem] font-medium text-muted-foreground hover:bg-transparent hover:text-foreground;
+    @apply h-7 rounded-[var(--radius-sm)] px-0 text-[0.84rem] font-medium text-muted-foreground hover:bg-transparent hover:text-foreground;
   }
 
   .proposal-report-action {
-    @apply h-7 w-7 rounded-[0.32rem] text-foreground hover:bg-muted hover:text-foreground disabled:opacity-60;
+    @apply h-7 w-7 rounded-[var(--radius-sm)] text-foreground hover:bg-muted hover:text-foreground disabled:opacity-60;
   }
 
   .proposal-report-notes {
@@ -770,7 +770,7 @@
 
   /* Card opacity collapsed from /95 to /100 in commit a4b32c0 (three documented tiers: /100, /60, /45). */
   .operational-loader {
-    @apply inline-flex items-center gap-3 rounded-[0.5rem] border border-border/70 bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.32)];
+    @apply inline-flex items-center gap-3 rounded-[var(--radius-md)] border border-border/70 bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-[0_10px_24px_-18px_rgba(15,23,42,0.32)];
   }
 
   .deferred-render-region {
@@ -829,11 +829,11 @@
   }
 
   .sidebar-brand {
-    @apply flex items-center gap-3 rounded-[0.5rem] border border-white/10 bg-white/5 px-3.5 py-3;
+    @apply flex items-center gap-3 rounded-[var(--radius-md)] border border-white/10 bg-white/5 px-3.5 py-3;
   }
 
   .sidebar-brand-mark {
-    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.5rem] border border-slate-200 bg-white text-slate-700;
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-slate-200 bg-white text-slate-700;
   }
 
   .dark .sidebar-brand-mark {
@@ -845,7 +845,7 @@
   }
 
   .sidebar-brand-mark-compact {
-    @apply h-16 w-16 rounded-[0.5rem] border-transparent bg-transparent shadow-none;
+    @apply h-16 w-16 rounded-[var(--radius-md)] border-transparent bg-transparent shadow-none;
     color: hsl(var(--brand-mark-fg));
   }
 
@@ -854,7 +854,7 @@
   }
 
   .sidebar-nav-item {
-    @apply relative flex w-full flex-col items-center justify-center gap-1 rounded-[0.5rem] border border-transparent px-1 py-2 text-center text-slate-400 transition-all duration-200 hover:text-slate-900;
+    @apply relative flex w-full flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border border-transparent px-1 py-2 text-center text-slate-400 transition-all duration-200 hover:text-slate-900;
   }
 
   .dark .sidebar-nav-item {
@@ -899,11 +899,11 @@
   }
 
   .sidebar-user-chip {
-    @apply flex items-center gap-2.5 rounded-[0.5rem] border border-white/10 bg-white/5 px-3 py-2.5;
+    @apply flex items-center gap-2.5 rounded-[var(--radius-md)] border border-white/10 bg-white/5 px-3 py-2.5;
   }
 
   .sidebar-user-card {
-    @apply mx-auto flex w-full items-center justify-center rounded-[0.5rem] border border-slate-200/90 bg-white px-3 py-3 text-center shadow-[0_14px_28px_-26px_rgba(15,23,42,0.3)];
+    @apply mx-auto flex w-full items-center justify-center rounded-[var(--radius-md)] border border-slate-200/90 bg-white px-3 py-3 text-center shadow-[0_14px_28px_-26px_rgba(15,23,42,0.3)];
   }
 
   .dark .sidebar-user-card {

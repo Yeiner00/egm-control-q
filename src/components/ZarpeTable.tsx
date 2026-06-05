@@ -338,7 +338,7 @@ const ZarpeTable = ({ refreshKey, onDeleted }: Props) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 rounded-[0.42rem] text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      className="h-8 w-8 rounded-[var(--radius-md)] text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       aria-label={`Eliminar zarpe ${z.zarpe_folio || z.nombre_embarcacion || "seleccionado"}`}
                       onClick={() => setDeleteTarget(z)}
                     >
