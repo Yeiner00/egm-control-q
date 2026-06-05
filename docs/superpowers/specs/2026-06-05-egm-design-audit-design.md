@@ -1,7 +1,7 @@
 # EGM Admin — Design System Audit & Refactor Spec
 
 **Date:** 2026-06-05
-**Status:** Approved (awaiting implementation plan)
+**Status:** Implemented
 **Scope:** Design system + shared components
 **Brief:** Sobria, seria, moderna. Consistente en toda la app, paridad light/dark.
 **Skill applied:** `design-taste-frontend` v2 (Taste Skill)
