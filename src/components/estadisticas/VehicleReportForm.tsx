@@ -558,7 +558,14 @@ const VehicleReportForm = ({
   };
 
   return (
-    <Card className="space-y-4 p-4 animate-fade-in">
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave();
+      }}
+      className="panel-card text-card-foreground space-y-4 p-4 animate-fade-in"
+    >
       <div className="flex flex-col gap-1 border-b border-border/70 pb-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="font-semibold text-foreground">Reporte de Vehiculo - Revisar Datos</h3>
@@ -770,7 +777,7 @@ const VehicleReportForm = ({
           deleteLabel={deleteLabel}
         />
       )}
-    </Card>
+    </form>
   );
 };
 

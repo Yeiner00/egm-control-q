@@ -27,7 +27,7 @@ const ReportFormActionBar = ({
 }: ReportFormActionBarProps) => (
   <div className={actionBarClass}>
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <Button type="button" onClick={onSave} disabled={saving || deleting} size="sm" className={actionButtonClass}>
+      <Button type="submit" disabled={saving || deleting} size="sm" className={actionButtonClass}>
         <Save className="h-4 w-4 mr-1" />
         {saving ? "Guardando..." : saveLabel}
       </Button>
