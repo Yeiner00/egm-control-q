@@ -801,7 +801,7 @@
   }
 
   .data-table-head {
-    @apply bg-navy text-white;
+    @apply bg-primary text-white;
   }
 
   .data-table-head th {
@@ -841,11 +841,8 @@
   }
 
   .sidebar-brand-mark-compact {
-    @apply h-16 w-16 rounded-[0.5rem] border-transparent bg-transparent text-primary shadow-none;
-  }
-
-  .dark .sidebar-brand-mark-compact {
-    @apply border-transparent bg-transparent text-teal-light shadow-none;
+    @apply h-16 w-16 rounded-[0.5rem] border-transparent bg-transparent shadow-none;
+    color: hsl(var(--brand-mark-fg));
   }
 
   .sidebar-nav {
