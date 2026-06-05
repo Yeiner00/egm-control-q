@@ -1,4 +1,4 @@
-# EGM Admin — Design System Audit & Refactor Spec
+# EGM Admin - Design System Audit & Refactor Spec
 
 **Date:** 2026-06-05
 **Status:** Implemented
@@ -18,7 +18,7 @@ Following Section 0 (Brief Inference) and Section 1 (Three Dials) of the Taste S
 | `MOTION_INTENSITY` | **2** | Trust-first tool. No scrolltelling, no marquee, no GSAP. Hover/focus micro-interactions only. Honors `prefers-reduced-motion` by default. |
 | `VISUAL_DENSITY` | **6** | Data-heavy dashboard. Standard web-app spacing (`py-4` to `py-8`). Cards used where they communicate real hierarchy; spacing/separators used otherwise. |
 
-**Redesign mode (Section 11.A):** **Preserve.** Modernise the design system and shared components without changing information architecture, copy voice (Spanish, sober), brand identity (navy + teal, Manrope), or accessibility wins (focus states, contrast, keyboard nav). The brief is "sober, serious, modern and consistent" — that is a token-and-component job, not a greenfield.
+**Redesign mode (Section 11.A):** **Preserve.** Modernise the design system and shared components without changing information architecture, copy voice (Spanish, sober), brand identity (navy + teal, Manrope), or accessibility wins (focus states, contrast, keyboard nav). The brief is "sober, serious, modern and consistent" - that is a token-and-component job, not a greenfield.
 
 **Why shadcn/ui (Section 2.A):** the project is "a modern SaaS where you own the components." shadcn/ui is the right call. The skill's honesty rule applies: customise radii, colors, shadows, typography. Never ship the default state. This spec is the customisation.
 
@@ -56,9 +56,9 @@ EGM Admin is an internal operations panel for zarpes, vehicle/boat reports, stat
 
 The Taste Skill v2 (`design-taste-frontend`, `~/.agents/skills/design-taste-frontend/`) was installed as a guide. Its three core "locks" are the lens for this audit:
 
-- **Color Consistency Lock** — one accent across the page.
-- **Shape Consistency Lock** — one corner-radius system per page.
-- **Page Theme Lock** — light, dark, or auto; no mid-page flips.
+- **Color Consistency Lock** - one accent across the page.
+- **Shape Consistency Lock** - one corner-radius system per page.
+- **Page Theme Lock** - light, dark, or auto; no mid-page flips.
 
 The current design satisfies the spirit of these locks at a high level (navy + teal accent, Manrope, no AI-purple gradients, no marketing decoration), but the audit found real leaks that erode consistency and dark/light parity. This spec consolidates them.
 
@@ -68,14 +68,14 @@ Ordered by impact. Each item is concrete and tied to a file or pattern.
 
 ### 1. shadcn primitives bypass the token system in dark mode
 
-- `src/components/ui/button-variants.ts:8` — the `default` variant uses `dark:border-cyan-300/35 dark:bg-cyan-400/15 dark:text-cyan-50`. This works only because the dark `--primary` happens to be `193 84% 56%` (a cyan). Touch the token and the button drifts.
-- `src/components/ui/tabs.tsx:30` — `TabsTrigger` uses `text-slate-500` and `dark:text-white/55` instead of the tokenized `text-muted-foreground` / `dark:text-muted-foreground`.
+- `src/components/ui/button-variants.ts:8` - the `default` variant uses `dark:border-cyan-300/35 dark:bg-cyan-400/15 dark:text-cyan-50`. This works only because the dark `--primary` happens to be `193 84% 56%` (a cyan). Touch the token and the button drifts.
+- `src/components/ui/tabs.tsx:30` - `TabsTrigger` uses `text-slate-500` and `dark:text-white/55` instead of the tokenized `text-muted-foreground` / `dark:text-muted-foreground`.
 
 ### 2. Raw Tailwind color palettes leak into feature components
 
-- `src/components/HeaderMiniCalendar.tsx:117-118` — `red-200/red-500/red-700` and `blue-200/blue-500/blue-700` for the alfa/bravo shift markers. No token.
-- `src/components/InicioTab.tsx` — `border-amber-300`, `bg-amber-400`, `bg-amber-300`, `bg-emerald-700` for holidays and approval badges. No token.
-- `src/components/estadisticas/ProposalReportCard.tsx` and the matching CSS in `src/index.css:545-702` — `bg-slate-100`, `text-slate-800/700/500/400/300`, `bg-slate-50/70`, `border-slate-200/90` instead of `bg-muted` / `text-foreground` / `text-muted-foreground` / `border-border`.
+- `src/components/HeaderMiniCalendar.tsx:117-118` - `red-200/red-500/red-700` and `blue-200/blue-500/blue-700` for the alfa/bravo shift markers. No token.
+- `src/components/InicioTab.tsx` - `border-amber-300`, `bg-amber-400`, `bg-amber-300`, `bg-emerald-700` for holidays and approval badges. No token.
+- `src/components/estadisticas/ProposalReportCard.tsx` and the matching CSS in `src/index.css:545-702` - `bg-slate-100`, `text-slate-800/700/500/400/300`, `bg-slate-50/70`, `border-slate-200/90` instead of `bg-muted` / `text-foreground` / `text-muted-foreground` / `border-border`.
 
 ### 3. `proposal-report-card` is broken in light mode
 
@@ -132,15 +132,15 @@ The alfa/bravo shift markers and the holiday/approved states use raw red/blue/am
 
 Per the Taste Skill, the following are explicit preservation constraints. Any change to one of these needs explicit user approval, not a routine refactor.
 
-- **Information architecture** — route slugs, primary nav labels, tab ordering, form field names and order (breaks analytics + autofill).
-- **Brand identity** — navy + teal language, Manrope typography, the EGM Admin wordmark, the `Sidebar` logo treatment.
-- **Copy voice** — Spanish, sober, operational. No filler verbs, no startup-speak.
-- **Legal / consent / cookie copy** — already present in `Login.tsx` and any consent surface. Do not rewrite.
-- **Accessibility wins already shipped** — focus-visible rings, keyboard nav in the calendar, contrast in the Login page. Do not regress.
+- **Information architecture** - route slugs, primary nav labels, tab ordering, form field names and order (breaks analytics + autofill).
+- **Brand identity** - navy + teal language, Manrope typography, the EGM Admin wordmark, the `Sidebar` logo treatment.
+- **Copy voice** - Spanish, sober, operational. No filler verbs, no startup-speak.
+- **Legal / consent / cookie copy** - already present in `Login.tsx` and any consent surface. Do not rewrite.
+- **Accessibility wins already shipped** - focus-visible rings, keyboard nav in the calendar, contrast in the Login page. Do not regress.
 
 ## Design
 
-### Section 1 — Token system & theme lock
+### Section 1 - Token system & theme lock
 
 #### 1.1 New tokens in `src/index.css`
 
@@ -161,7 +161,7 @@ Add to `:root` and `.dark` as appropriate. Values are HSL components to match th
 
 ```css
 --radius-sm: 0.375rem;  /* 6px */
---radius-md: 0.5rem;    /* 8px — current --radius */
+--radius-md: 0.5rem;    /* 8px - current --radius */
 --radius-lg: 0.75rem;   /* 12px */
 ```
 
@@ -263,24 +263,24 @@ Wrap any `MOTION_INTENSITY > 3` motion in a `prefers-reduced-motion` guard. Sinc
 - In light mode, interactive elements (CTAs, active tabs, primary buttons) use `--primary` (navy).
 - In dark mode, the same elements use `--primary-on-dark` (the cyan). Brand chrome (logo, app title, sidebar brand mark) uses `--primary` in both modes via the `--brand-mark-fg` token.
 
-This satisfies the **Page Theme Lock** (Section 4.11) — one accent of brand identity across the page, no mid-page theme flip — and the **Color Consistency Lock** (Section 4.2) — one accent color used identically across sections (navy on chrome in both modes; the dark interactive token is a contrast-corrected variant of the same brand, not a second accent). Future theme changes update `--primary-on-dark` independently without touching the chrome.
+This satisfies the **Page Theme Lock** (Section 4.11) - one accent of brand identity across the page, no mid-page theme flip - and the **Color Consistency Lock** (Section 4.2) - one accent color used identically across sections (navy on chrome in both modes; the dark interactive token is a contrast-corrected variant of the same brand, not a second accent). Future theme changes update `--primary-on-dark` independently without touching the chrome.
 
 #### 1.3 shadcn primitive migration
 
-- `src/components/ui/button-variants.ts:8` — `default` variant:
+- `src/components/ui/button-variants.ts:8` - `default` variant:
   - Replace `dark:border-cyan-300/35 dark:bg-cyan-400/15 dark:text-cyan-50 dark:shadow-none dark:hover:border-cyan-300/45 dark:hover:bg-cyan-400/25` with `dark:border-[hsl(var(--primary-on-dark)/0.35)] dark:bg-[hsl(var(--primary-on-dark)/0.15)] dark:text-[hsl(var(--primary-on-dark))] dark:shadow-none dark:hover:border-[hsl(var(--primary-on-dark)/0.45)] dark:hover:bg-[hsl(var(--primary-on-dark)/0.25)]`.
   - The light side stays as-is (`bg-primary`, `text-primary-foreground`).
-- `src/components/ui/tabs.tsx:30` — `TabsTrigger`:
+- `src/components/ui/tabs.tsx:30` - `TabsTrigger`:
   - Replace `text-slate-500` with `text-muted-foreground`.
   - Replace `dark:text-white/55` with `dark:text-muted-foreground`.
   - The active state (`data-[state=active]:text-primary`) is already tokenized; in dark, swap to `dark:data-[state=active]:text-[hsl(var(--primary-on-dark))]` to keep the high-contrast active color in dark.
   - The active border (`data-[state=active]:border-primary` / `dark:data-[state=active]:border-teal-light`) becomes `data-[state=active]:border-[hsl(var(--primary))] dark:data-[state=active]:border-[hsl(var(--primary-on-dark))]`.
 
-### Section 2 — Component migration & parity
+### Section 2 - Component migration & parity
 
 #### 2.1 Components to touch
 
-- `src/components/HeaderMiniCalendar.tsx` — replace the `squadType === "alfa" / "bravo"` raw color classes with tokenized versions. Pattern:
+- `src/components/HeaderMiniCalendar.tsx` - replace the `squadType === "alfa" / "bravo"` raw color classes with tokenized versions. Pattern:
   - `border-[hsl(var(--squad-alfa)/0.25)] bg-[hsl(var(--squad-alfa)/0.12)] text-[hsl(var(--squad-alfa-fg))]` for alfa; mirror for bravo.
   - Calendar cell `rounded-md` becomes `rounded-[calc(var(--radius-sm))]`.
 - `src/components/InicioTab.tsx`:
@@ -298,7 +298,7 @@ This satisfies the **Page Theme Lock** (Section 4.11) — one accent of brand id
   - `report-list-row-error` uses `border-destructive/55 bg-destructive/5` → keep (tokenized).
   - `report-list-tag` uses `bg-muted text-muted-foreground` → keep.
   - Card opacity variants: collapse `bg-card/95`, `bg-card/96`, `bg-card/88`, `bg-card/82` into three documented values (`bg-card`, `bg-card/80`, `bg-card/60`).
-- `src/components/ThemeToggle.tsx` — already tokenized. No change.
+- `src/components/ThemeToggle.tsx` - already tokenized. No change.
 - `src/index.css` cleanup (after the per-component migration):
   - Replace ad-hoc `rounded-[0.XXrem]` with `--radius-sm/md/lg` references.
   - Replace ad-hoc `shadow-[0_Xpx_Ypx_-Zpx_...]` with `--shadow-xs/sm/md/lg`.
@@ -311,11 +311,11 @@ This satisfies the **Page Theme Lock** (Section 4.11) — one accent of brand id
 
 Each phase ends with a visually verifiable state. Do not start the next phase until the previous one renders correctly in both modes.
 
-1. **Tokens** — add the new tokens to `src/index.css` (no behavior change). Verify `npm run dev` and `npm run build` still pass.
-2. **Primitives** — adjust `src/components/ui/button-variants.ts` and `src/components/ui/tabs.tsx` to use the new tokens. Visual diff should be near-zero; the goal is locking the dependency.
-3. **Shared components** — migrate `HeaderMiniCalendar`, `InicioTab`, `ProposalReportCard`, `ReportListRow`, sidebar/top-header/panel CSS, and the rest of the shared-component set in `src/index.css`. This is the visually visible change.
-4. **CSS cleanup** — collapse the radius, shadow, motion, and opacity noise. Mechanical pass.
-5. **Parity sweep** — run the parity checklist below on every tab in both modes. Fix any drift.
+1. **Tokens** - add the new tokens to `src/index.css` (no behavior change). Verify `npm run dev` and `npm run build` still pass.
+2. **Primitives** - adjust `src/components/ui/button-variants.ts` and `src/components/ui/tabs.tsx` to use the new tokens. Visual diff should be near-zero; the goal is locking the dependency.
+3. **Shared components** - migrate `HeaderMiniCalendar`, `InicioTab`, `ProposalReportCard`, `ReportListRow`, sidebar/top-header/panel CSS, and the rest of the shared-component set in `src/index.css`. This is the visually visible change.
+4. **CSS cleanup** - collapse the radius, shadow, motion, and opacity noise. Mechanical pass.
+5. **Parity sweep** - run the parity checklist below on every tab in both modes. Fix any drift.
 
 #### 2.3 Parity checklist
 
@@ -329,8 +329,8 @@ Run on every tab (Inicio, Zarpes, Reportes, Estadísticas, Estadística) in both
 
 #### 2.4 Verification
 
-- `npm run lint` — no new warnings.
-- `npm run build` — no type errors, build succeeds.
+- `npm run lint` - no new warnings.
+- `npm run build` - no type errors, build succeeds.
 - Manual visual sweep per the parity checklist.
 - No new automated visual regression test in this iteration. A Playwright screenshot test for light/dark parity is listed as a follow-up.
 - **Copy self-audit (Section 14):** re-read every visible string the change touches. Flag and rewrite filler verbs (elevate, seamlessly, unleash, etc.) and any AI-hallucinated phrasing. Spanish copy stays.
@@ -340,18 +340,18 @@ Run on every tab (Inicio, Zarpes, Reportes, Estadísticas, Estadística) in both
 
 ## Pre-Flight Check (Section 14, admin-appropriate subset)
 
-This is the gate before declaring a phase done. Marketing-only checks from the Skill's matrix (hero discipline, eyebrow cap, split-header ban, marquee, GSAP sticky-stack, etc.) are intentionally excluded — see "Scope of the Taste Skill applied to this spec" above.
+This is the gate before declaring a phase done. Marketing-only checks from the Skill's matrix (hero discipline, eyebrow cap, split-header ban, marquee, GSAP sticky-stack, etc.) are intentionally excluded - see "Scope of the Taste Skill applied to this spec" above.
 
 **Universal checks (must pass every phase):**
 
-- [ ] **Em-dash ban (Section 9.G):** zero `—` or `–` in the diff. Use hyphen, period, or comma.
+- [ ] **Em-dash ban (Section 9.G):** zero em-dash or en-dash in the diff. Use hyphen, period, or comma.
 - [ ] **No Inter as default (Section 9.B):** font stack still Manrope. No new font import.
 - [ ] **Color Consistency Lock (Section 4.2):** no new accent color introduced. One navy on chrome, one `--primary-on-dark` for dark interactive elements.
 - [ ] **Shape Consistency Lock (Section 4.4):** new radii pick from `--radius-sm/md/lg`. No new raw `rounded-[0.XXrem]`.
 - [ ] **Page Theme Lock (Section 4.11):** no component conditionally inverts its own theme (e.g., a "dark card" inside the light page or vice versa).
 - [ ] **No AI-purple / no glassmorphism slop (Section 9.A):** palette stays navy + teal; no `backdrop-blur` panels added in this iteration.
 - [ ] **No pure black/white (Section 9.A):** chrome uses `bg-navy` + `bg-slate-50`; never `bg-black` or `bg-white` outside the Login page hero (already a one-off).
-- [ ] **No Jane Doe / Acme / generic names (Section 9.D):** example data uses domain names (capitan, embarcacion, zarpe, mota) — already the case.
+- [ ] **No Jane Doe / Acme / generic names (Section 9.D):** example data uses domain names (capitan, embarcacion, zarpe, mota) - already the case.
 - [ ] **No startup-slop filler verbs (Section 9.D):** Spanish copy uses concrete verbs (crear, registrar, marcar, eliminar), not anglicisms.
 - [ ] **One design system per project (Section 14):** shadcn/ui only. No Material or Polaris imports.
 - [ ] **Empty/loading/error states (Section 14):** any new async surface has the three states. The current `Inbox`-style tab and `ReportUploader` already do; preserve.
@@ -360,15 +360,15 @@ This is the gate before declaring a phase done. Marketing-only checks from the S
 
 **Tailwind lints (run mechanically):**
 
-- `rg -nP 'class="[^"]*\\b(bg|text|border|ring)-(slate|red|blue|amber|emerald|cyan|sky|teal|indigo|violet|purple|fuchsia|pink|rose)-[0-9]+' src/components src/index.css` — only the chrome exceptions (`bg-navy`, `bg-slate-50` in `src/index.css` for the sidebar/top-header) should match. Any new hit in a feature component fails the check.
-- `rg -nP 'rounded-\\[0-9' src/components src/index.css` — only `--radius-sm/md/lg` references or pre-existing values should match.
-- `rg -nP 'shadow-\\[0_' src/components src/index.css` — only `--shadow-xs/sm/md/lg` references or pre-existing values should match.
-- `rg -nP 'transition-\\[(color|background-color|border-color|box-shadow|transform)' src/components src/index.css` — should only appear in pre-existing utilities; new motion should use the tokenized shorthand.
+- `rg -nP '\b(bg|text|border|ring)-(slate|red|blue|amber|emerald|cyan|sky|teal|indigo|violet|purple|fuchsia|pink|rose)-[0-9]+' src/components src/index.css` - only the chrome exceptions (`bg-navy`, `bg-slate-50` in `src/index.css` for the sidebar/top-header) should match. Any new hit in a feature component fails the check. The pattern is more permissive than `class="..."` to also catch React `className="..."` and CVA strings like `cva("bg-red-500 ...")`.
+- `rg -nP 'rounded-\\[0-9' src/components src/index.css` - only `--radius-sm/md/lg` references or pre-existing values should match.
+- `rg -nP 'shadow-\\[0_' src/components src/index.css` - only `--shadow-xs/sm/md/lg` references or pre-existing values should match.
+- `rg -nP 'transition-\\[(color|background-color|border-color|box-shadow|transform)' src/components src/index.css` - should only appear in pre-existing utilities; new motion should use the tokenized shorthand.
 
 ## Risks & mitigations
 
 - **Visual regressions in the primitives migration** (Phase 2). Mitigation: keep the change to two files; the visual should match the current behavior exactly because the new tokens resolve to the same HSL values.
-- **CSS class churn is large** (Phases 3–4). Mitigation: do it in two passes per component (tokenize first, then dedupe). Run `npm run dev` between components to catch breaks early.
+- **CSS class churn is large** (Phases 3-4). Mitigation: do it in two passes per component (tokenize first, then dedupe). Run `npm run dev` between components to catch breaks early.
 - **Squad colors are domain-specific** (alfa/bravo). Mitigation: keep the same hues (red/blue family) so the operational meaning does not change; only tokenize the values.
 
 ## Open follow-ups (out of scope for this iteration)

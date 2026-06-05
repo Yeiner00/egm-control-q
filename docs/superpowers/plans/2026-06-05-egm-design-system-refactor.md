@@ -4,7 +4,7 @@
 
 **Goal:** Tokenize the EGM Admin design system, fix dark/light parity leaks, and align shared components to a single source of truth. No copy, IA, or brand changes. No new component library.
 
-**Architecture:** Five sequential phases that each end in a visually verifiable state — (1) add tokens, (2) update shadcn primitives to use them, (3) migrate shared components, (4) dedupe CSS noise, (5) run the parity sweep and Pre-Flight Check. Each commit is a single, self-contained change.
+**Architecture:** Five sequential phases that each end in a visually verifiable state - (1) add tokens, (2) update shadcn primitives to use them, (3) migrate shared components, (4) dedupe CSS noise, (5) run the parity sweep and Pre-Flight Check. Each commit is a single, self-contained change.
 
 **Tech Stack:** Vite + React 18 + TypeScript + Tailwind + shadcn/ui (already in use; do not add Radix Themes or shadcn Blocks). Manrope font (do not change). HSL CSS variables defined in `src/index.css` and consumed via `hsl(var(--token))`.
 
@@ -13,7 +13,7 @@
 **Constraints (do not violate):**
 
 - The Taste Skill v2 is applied to this plan. The Pre-Flight Check in the spec is the gate. Do not skip it.
-- Em-dash ban (Skill Section 9.G): zero `—` or `–` in any code or string you write. Use hyphen, period, or comma.
+- Em-dash ban (Skill Section 9.G): zero em-dash or en-dash in any code or string you write. Use hyphen, period, or comma.
 - No Inter as default (Skill Section 9.B): font stays Manrope.
 - One design system (Skill Section 14): shadcn/ui only. No Material, Radix Themes, or Polaris imports.
 - "What never changes" (Skill Section 11.F): no route slug, nav label, form field name/order, or Spanish copy change.
@@ -32,7 +32,7 @@
 **Files:**
 - Modify: `src/index.css:1-60` (`:root` block) and `:60-...` (`.dark` block)
 
-**Why:** This phase is the foundation. Every later phase depends on these tokens. No behavior change yet — purely additive.
+**Why:** This phase is the foundation. Every later phase depends on these tokens. No behavior change yet - purely additive.
 
 - [ ] **Step 1: Read the current `:root` and `.dark` blocks**
 
@@ -53,7 +53,7 @@ Inside the existing `:root { ... }` block (before the closing brace), add these 
 
 /* --- Radius scale (Shape Consistency Lock) --- */
 --radius-sm: 0.375rem;  /* 6px */
---radius-md: 0.5rem;    /* 8px — current --radius */
+--radius-md: 0.5rem;    /* 8px - current --radius */
 --radius-lg: 0.75rem;   /* 12px */
 
 /* --- Shadow scale --- */
@@ -158,7 +158,7 @@ git commit -m "Add design system tokens (type, radius, shadow, motion, status, s
 **Files:**
 - Modify: `src/index.css` `.dark` block where `--primary` is defined
 
-**Why:** Spec Section 1.2 — `--primary` stays navy in both modes for brand identity; the cyan that was on dark `--primary` becomes `--primary-on-dark` and is used by interactive elements only.
+**Why:** Spec Section 1.2 - `--primary` stays navy in both modes for brand identity; the cyan that was on dark `--primary` becomes `--primary-on-dark` and is used by interactive elements only.
 
 - [ ] **Step 1: Find the dark `--primary` line**
 
@@ -184,7 +184,7 @@ Replace it with:
 --primary-on-dark: 193 84% 56%;
 ```
 
-Do not touch the `:root` `--primary` line. Do not touch any other reference to `--primary` in this task — those are addressed in Phase 2.
+Do not touch the `:root` `--primary` line. Do not touch any other reference to `--primary` in this task - those are addressed in Phase 2.
 
 - [ ] **Step 3: Verify the build still passes**
 
@@ -212,7 +212,7 @@ git commit -m "Move dark --primary value into --primary-on-dark token"
 **Files:**
 - Modify: `src/components/ui/button-variants.ts:8`
 
-**Why:** Spec Section 1.3 — the dark `default` variant hard-codes cyan because dark `--primary` happened to be cyan. After Task 1.2, dark `--primary` is now navy, so the button will render incorrectly until we point it at `--primary-on-dark`.
+**Why:** Spec Section 1.3 - the dark `default` variant hard-codes cyan because dark `--primary` happened to be cyan. After Task 1.2, dark `--primary` is now navy, so the button will render incorrectly until we point it at `--primary-on-dark`.
 
 - [ ] **Step 1: Read the file**
 
@@ -268,7 +268,7 @@ git commit -m "Tokenize button default variant dark mode (--primary-on-dark)"
 **Files:**
 - Modify: `src/components/ui/tabs.tsx:30`
 
-**Why:** Spec Section 1.3 — `TabsTrigger` uses raw `text-slate-500` and `dark:text-white/55`; the active state also leaks raw teal in dark.
+**Why:** Spec Section 1.3 - `TabsTrigger` uses raw `text-slate-500` and `dark:text-white/55`; the active state also leaks raw teal in dark.
 
 - [ ] **Step 1: Read the file**
 
@@ -330,7 +330,7 @@ git commit -m "Tokenize tabs trigger muted text and dark active state"
 **Files:**
 - Modify: `src/components/HeaderMiniCalendar.tsx:117-118`
 
-**Why:** Spec Section 2.1 — replace raw `red-200/.../red-700` and `blue-200/.../blue-700` with `--squad-alfa` / `--squad-bravo` tokens. Calendar cells also use `rounded-md` which becomes the new radius token.
+**Why:** Spec Section 2.1 - replace raw `red-200/.../red-700` and `blue-200/.../blue-700` with `--squad-alfa` / `--squad-bravo` tokens. Calendar cells also use `rounded-md` which becomes the new radius token.
 
 - [ ] **Step 1: Read the relevant lines**
 
@@ -355,7 +355,7 @@ The current raw classes map to tokens as follows:
 
 - [ ] **Step 3: Apply the mapping**
 
-Replace each occurrence of the raw `red-/blue-` classes with the corresponding tokenized form from the table above. Be exhaustive — every dot, border, background, and text that depends on `squadType` must be tokenized.
+Replace each occurrence of the raw `red-/blue-` classes with the corresponding tokenized form from the table above. Be exhaustive - every dot, border, background, and text that depends on `squadType` must be tokenized.
 
 - [ ] **Step 4: Replace `rounded-md` on calendar cells**
 
@@ -395,7 +395,7 @@ git commit -m "Tokenize HeaderMiniCalendar squad markers (squad-alfa, squad-brav
 **Files:**
 - Modify: `src/components/InicioTab.tsx`
 
-**Why:** Spec Section 2.1 — replace raw `amber-/emerald-` for holidays and approval with `--state-warning` and `--state-success` tokens.
+**Why:** Spec Section 2.1 - replace raw `amber-/emerald-` for holidays and approval with `--state-warning` and `--state-success` tokens.
 
 - [ ] **Step 1: Find raw color usage**
 
@@ -411,7 +411,7 @@ rg -n 'amber-[0-9]|emerald-[0-9]' src/components/InicioTab.tsx
 | `bg-amber-400` | `bg-[hsl(var(--state-warning))]` |
 | `bg-amber-300` | `bg-[hsl(var(--state-warning))]` |
 | `bg-emerald-700` | `bg-[hsl(var(--state-success))]` |
-| `text-amber-50/900` (legends) | `text-[hsl(var(--state-warning-fg))]` / `text-[hsl(var(--state-warning-soft))]` — pick the closest semantic match; if the original was a dark amber on a light chip, use `--state-warning-soft` background with default text. |
+| `text-amber-50/900` (legends) | `text-[hsl(var(--state-warning-fg))]` / `text-[hsl(var(--state-warning-soft))]` - pick the closest semantic match; if the original was a dark amber on a light chip, use `--state-warning-soft` background with default text. |
 | Rejected badge `bg-muted text-muted-foreground` | keep (already tokenized) |
 
 - [ ] **Step 3: Apply the mapping and update holiday chip radius**
@@ -495,7 +495,7 @@ git commit -m "Fix proposal-report-card bg-white bug and tokenize slate classes"
 **Files:**
 - Modify: `src/index.css` `.report-list-row*` rules and `src/components/estadisticas/ReportListRow.tsx`
 
-**Why:** Spec Section 2.1 — `bg-card/95`, `bg-card/96`, `bg-card/88`, `bg-card/82` coexist for no reason. Collapse to three documented values.
+**Why:** Spec Section 2.1 - `bg-card/95`, `bg-card/96`, `bg-card/88`, `bg-card/82` coexist for no reason. Collapse to three documented values.
 
 - [ ] **Step 1: Find all card-opacity variants**
 
@@ -541,7 +541,7 @@ git commit -m "Collapse report-list-row card opacity variants to three documente
 **Files:**
 - Modify: `src/index.css` (sidebar rules, `.top-header`, `.panel-header`, `.data-table-head`, `.sidebar-brand-mark-compact`)
 
-**Why:** Spec Section 2.1 — sidebar brand mark switches to teal only in dark (asymmetry); `data-table-head` hard-codes `bg-navy`; the top-header and panel-header should share a single surface token.
+**Why:** Spec Section 2.1 - sidebar brand mark switches to teal only in dark (asymmetry); `data-table-head` hard-codes `bg-navy`; the top-header and panel-header should share a single surface token.
 
 - [ ] **Step 1: Read the relevant CSS rules**
 
@@ -551,7 +551,7 @@ rg -n 'data-table-head|sidebar-brand-mark-compact|top-header|panel-header' src/i
 
 - [ ] **Step 2: Apply the four changes**
 
-Change A — `data-table-head` uses `--primary` (chrome, like the brand):
+Change A - `data-table-head` uses `--primary` (chrome, like the brand):
 
 Find:
 
@@ -561,7 +561,7 @@ Find:
 
 Replace `hsl(var(--navy))` with `hsl(var(--primary))`. The hue is the same (navy), but tokenising it makes the rule theme-aware.
 
-Change B — `sidebar-brand-mark-compact` uses `--brand-mark-fg`:
+Change B - `sidebar-brand-mark-compact` uses `--brand-mark-fg`:
 
 Find:
 
@@ -578,7 +578,7 @@ Replace both rules with a single one:
 
 (The `--brand-mark-fg` token already encodes the dark/light asymmetry; both rules collapse into one.)
 
-Change C — `.top-header` and `.panel-header` share the same surface token:
+Change C - `.top-header` and `.panel-header` share the same surface token:
 
 Pick the surface token that best matches the current `bg-navy` (top header) and the existing `bg-card` (panel). If both currently use distinct surfaces intentionally, leave them; otherwise unify on `hsl(var(--card))` for the panel and `hsl(var(--primary))` for the top header. The goal is "documented, not accidental."
 
@@ -612,7 +612,7 @@ git commit -m "Standardize sidebar, top-header, panel, and data-table-head chrom
 **Files:**
 - Modify: `src/index.css` and any component that uses one-off rounded classes
 
-**Why:** Spec Section 2.1 and Audit finding #5 — eight micro-variants for what should be three or four sizes.
+**Why:** Spec Section 2.1 and Audit finding #5 - eight micro-variants for what should be three or four sizes.
 
 - [ ] **Step 1: Find all one-off rounded classes**
 
@@ -799,7 +799,7 @@ Expected: zero matches. The em-dash ban is non-negotiable.
 
 - [ ] **Step 2: If any match exists, fix it**
 
-Replace `—` with `. `, `, `, or ` - ` (hyphen with spaces) as appropriate. Replace `–` (en dash used as a separator) with `-` (hyphen).
+Replace em-dash with `. `, `, `, or ` - ` (hyphen with spaces) as appropriate. Replace en-dash (used as a separator) with `-` (hyphen).
 
 If fixes were needed, commit:
 
@@ -863,7 +863,7 @@ git commit -m "Fix lint and build findings from parity sweep"
 
 ### Task 5.5: Manual parity checklist
 
-Spec Section 2.3 — run on every tab (Inicio, Zarpes, Reportes, Estadísticas, Estadística) in both modes.
+Spec Section 2.3 - run on every tab (Inicio, Zarpes, Reportes, Estadísticas, Estadística) in both modes.
 
 - [ ] **Step 1: Open each tab in light mode and verify**
 
@@ -891,7 +891,7 @@ git commit -m "Adjust token value to fix manual parity finding"
 
 - [ ] **Step 1: Read the Pre-Flight Check matrix in the spec**
 
-`docs/superpowers/specs/2026-06-05-egm-design-audit-design.md` — the "Pre-Flight Check (Section 14, admin-appropriate subset)" section.
+`docs/superpowers/specs/2026-06-05-egm-design-audit-design.md` - the "Pre-Flight Check (Section 14, admin-appropriate subset)" section.
 
 - [ ] **Step 2: Tick every box honestly**
 
