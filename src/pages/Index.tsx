@@ -14,7 +14,6 @@ import {
   LogOut,
   Menu,
   PanelLeftClose,
-  Ship,
   X,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -23,11 +22,10 @@ import { cn } from "@/lib/utils";
 
 const InicioTab = lazy(() => import("@/components/InicioTab"));
 const ReportesTab = lazy(() => import("@/components/ReportesTab"));
-const ZarpesTab = lazy(() => import("@/components/ZarpesTab"));
 const EstadisticasTab = lazy(() => import("@/components/EstadisticasTab"));
 const EstadisticaTab = lazy(() => import("@/components/EstadisticaTab"));
 
-type AppTab = "inicio" | "zarpes" | "reportes" | "estadisticas" | "estadistica";
+type AppTab = "inicio" | "reportes" | "estadisticas" | "estadistica";
 type ReportesSubtab = "manual" | "subir" | "importar" | "catalogos" | "gestionar" | "exportar";
 type ReportEditTarget =
   | { tipo: "vehiculo"; reportId: string }
@@ -49,7 +47,6 @@ const NAV_ITEMS: Array<{
   { value: "reportes", label: "Reportes", shortLabel: "Carga y gestion", eyebrow: "Datos operativos", icon: FileSpreadsheet },
   { value: "estadisticas", label: "Propuestas", shortLabel: "Analisis por persona", eyebrow: "Insumos y evaluacion", icon: ClipboardList },
   { value: "estadistica", label: "Estadistica", shortLabel: "Indicadores", eyebrow: "Proximamente", icon: BarChart3 },
-  { value: "zarpes", label: "Zarpes", shortLabel: "Control de zarpes", eyebrow: "Operacion maritima", icon: Ship },
 ];
 
 const TabFallback = () => (
@@ -248,11 +245,6 @@ const Index = () => {
                   onOpenReportesManual={openReportesManual}
                   onOpenEstadistica={openEstadistica}
                 />
-              </Suspense>
-            </TabsContent>
-            <TabsContent value="zarpes">
-              <Suspense fallback={<TabFallback />}>
-                <ZarpesTab />
               </Suspense>
             </TabsContent>
             <TabsContent value="reportes">

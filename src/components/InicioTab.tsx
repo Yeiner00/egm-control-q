@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useState } from "react";
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, FilePlus2, FileText, LayoutDashboard, Ship } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, FilePlus2, FileText, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -9,11 +9,6 @@ import { cn } from "@/lib/utils";
 import { loadReportPeopleByIds } from "@/lib/reportPeople";
 import { getErrorMessage } from "@/lib/errorMessage";
 import { buildTopNauticalMiles, buildTopVehicleTrips, type PersonMetric } from "@/lib/homePerformance";
-
-type RecentZarpe = Pick<
-  Tables<"zarpes_semana">,
-  "id" | "created_at" | "destino" | "fecha_viaje" | "nombre_embarcacion" | "zarpe_folio"
->;
 
 type RecentVehicleReport = Pick<
   Tables<"reportes_vehiculo">,
@@ -184,7 +179,6 @@ const InicioTab = ({ onOpenReportesManual, onOpenEstadistica }: InicioTabProps) 
   const [displayYear, setDisplayYear] = useState(today.getFullYear());
   const [displayMonth, setDisplayMonth] = useState(today.getMonth());
   const [loading, setLoading] = useState(true);
-  const [recentZarpes, setRecentZarpes] = useState<RecentZarpe[]>([]);
   const [recentVehicleReports, setRecentVehicleReports] = useState<RecentVehicleReport[]>([]);
   const [recentBoatReports, setRecentBoatReports] = useState<RecentBoatReport[]>([]);
   const [topNauticalMiles, setTopNauticalMiles] = useState<PersonMetric[]>([]);
@@ -204,12 +198,7 @@ const InicioTab = ({ onOpenReportesManual, onOpenEstadistica }: InicioTabProps) 
     const loadOverview = async () => {
       setLoading(true);
 
-      const [zarpesResponse, vehicleReportsResponse, boatReportsResponse] = await Promise.all([
-        supabase
-          .from("zarpes_semana")
-          .select("id, created_at, destino, fecha_viaje, nombre_embarcacion, zarpe_folio")
-          .order("created_at", { ascending: false })
-          .limit(MAX_RECENT_ITEMS),
+      const [vehicleReportsResponse, boatReportsResponse] = await Promise.all([
         supabase
           .from("reportes_vehiculo")
           .select("id, created_at, fecha, no_reporte, vehiculo")
@@ -225,7 +214,6 @@ const InicioTab = ({ onOpenReportesManual, onOpenEstadistica }: InicioTabProps) 
       if (!active) return;
 
       const errors = [
-        zarpesResponse.error,
         vehicleReportsResponse.error,
         boatReportsResponse.error,
       ].filter(Boolean);
@@ -236,7 +224,6 @@ const InicioTab = ({ onOpenReportesManual, onOpenEstadistica }: InicioTabProps) 
         return;
       }
 
-      setRecentZarpes((zarpesResponse.data ?? []) as RecentZarpe[]);
       setRecentVehicleReports((vehicleReportsResponse.data ?? []) as RecentVehicleReport[]);
       setRecentBoatReports((boatReportsResponse.data ?? []) as RecentBoatReport[]);
       setLoading(false);
@@ -421,59 +408,13 @@ const InicioTab = ({ onOpenReportesManual, onOpenEstadistica }: InicioTabProps) 
                   <div className="section-eyebrow">Inicio</div>
                   <CardTitle className="text-2xl sm:text-3xl lg:text-[1.55rem]">Resumen operativo reciente</CardTitle>
                   <CardDescription className="max-w-2xl text-sm leading-6 lg:text-[0.92rem] lg:leading-5">
-                    Consulta rapida de los ultimos zarpes registrados y de los reportes recientes de movil y embarcacion.
+                    Consulta rapida de los reportes recientes de movil y embarcacion.
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="grid flex-1 gap-5 pt-6 xl:grid-cols-3 lg:gap-3.5 lg:pt-4">
-              <section className="space-y-4 lg:space-y-3">
-                <div className="flex items-center gap-3 lg:gap-2.5">
-                  <div className="flex shrink-0 items-center justify-center text-primary">
-                    <Ship className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground lg:text-[1.02rem]">Ultimos zarpes registrados</h3>
-                    <p className="text-sm text-muted-foreground lg:text-[0.88rem]">Actividad reciente del modulo de zarpes.</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 lg:space-y-2.5">
-                  {loading && renderRecentSkeletons()}
-
-                  {!loading && recentZarpes.length === 0 && (
-                    <div className="empty-state">
-                      <p className="text-sm font-medium text-muted-foreground">Aun no hay zarpes para mostrar.</p>
-                    </div>
-                  )}
-
-                  {!loading && recentZarpes.map((zarpe) => (
-                    <article key={zarpe.id} className="panel-subtle space-y-2 p-4 lg:space-y-1.5 lg:p-3.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-foreground lg:text-[0.95rem]">
-                            {zarpe.nombre_embarcacion || "Embarcacion sin nombre"}
-                          </div>
-                          <div className="mt-1 text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                            Folio {zarpe.zarpe_folio || "sin asignar"}
-                          </div>
-                        </div>
-                        <div className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold leading-none text-primary lg:px-2.5 lg:py-0.5">
-                          {formatDate(zarpe.fecha_viaje)}
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground lg:text-[0.88rem]">
-                        Destino: <span className="font-medium text-foreground">{zarpe.destino || "Sin destino"}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Registrado: {formatTimestamp(zarpe.created_at)}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
+            <CardContent className="grid flex-1 gap-5 pt-6 xl:grid-cols-2 lg:gap-3.5 lg:pt-4">
               <section className="space-y-4 lg:space-y-3">
                 <div className="flex items-center gap-3 lg:gap-2.5">
                   <div className="flex shrink-0 items-center justify-center text-accent">
