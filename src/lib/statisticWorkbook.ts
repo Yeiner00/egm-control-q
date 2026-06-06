@@ -1,6 +1,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { dateKeyToExcelSerial, buildPeriodDays, parseDateKey, type SquadType } from "@/lib/squadCalendar";
 import { STATISTIC_AI_ROW_NUMBERS, isStatisticAiRowAllowed } from "@/lib/statisticAiRows";
+import { yieldToMain } from "@/lib/scheduler";
 
 export type StatisticReportType = "vehiculo" | "embarcacion";
 
@@ -457,7 +458,7 @@ const buildSheetPatches = (accumulator: SheetAccumulator) => {
   return patches;
 };
 
-const buildWorkbookPatches = (input: StatisticWorkbookInput, sheetNames: string[]) => {
+const buildWorkbookPatches = async (input: StatisticWorkbookInput, sheetNames: string[]) => {
   const dayColumnsByDate = new Map(buildPeriodDays(input.startDate).map((date, index) => [date, DAY_COLUMNS[index]]));
   const sheetNameByKey = new Map(
     sheetNames
@@ -471,23 +472,27 @@ const buildWorkbookPatches = (input: StatisticWorkbookInput, sheetNames: string[
   const pendingMotivesByKey = new Map<string, StatisticWorkbookSummary["pendingMotives"][number]>();
   let usedReports = 0;
 
-  input.vehicleReports.forEach((report) => {
+  let deadline = performance.now() + 50;
+  for (const report of input.vehicleReports) {
     const column = report.fecha ? dayColumnsByDate.get(report.fecha) : undefined;
     const sheetName = sheetNameByKey.get(normalizeStatisticSheetKey(report.vehiculo));
 
     if (!column) {
       pendingReports.push({ id: report.id, tipo: "vehiculo", no_reporte: report.no_reporte, fecha: report.fecha, unidad: report.vehiculo, reason: "missing_date" });
-      return;
+      if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+      continue;
     }
 
     if (!report.vehiculo?.trim()) {
       pendingReports.push({ id: report.id, tipo: "vehiculo", no_reporte: report.no_reporte, fecha: report.fecha, unidad: report.vehiculo, reason: "missing_unit" });
-      return;
+      if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+      continue;
     }
 
     if (!sheetName) {
       pendingReports.push({ id: report.id, tipo: "vehiculo", no_reporte: report.no_reporte, fecha: report.fecha, unidad: report.vehiculo, reason: "missing_sheet" });
-      return;
+      if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+      continue;
     }
 
     const accumulator = getOrCreateAccumulator(accumulators, sheetName);
@@ -504,25 +509,29 @@ const buildWorkbookPatches = (input: StatisticWorkbookInput, sheetNames: string[
     accumulator.numbers[`${column}53`] = addNullable(accumulator.numbers[`${column}53`], 1);
     mappedReports.set(report.id, { column, sheetName });
     usedReports += 1;
-  });
+    if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+  }
 
-  input.boatReports.forEach((report) => {
+  for (const report of input.boatReports) {
     const column = report.fecha ? dayColumnsByDate.get(report.fecha) : undefined;
     const sheetName = sheetNameByKey.get(normalizeStatisticSheetKey(report.embarcacion));
 
     if (!column) {
       pendingReports.push({ id: report.id, tipo: "embarcacion", no_reporte: report.no_reporte, fecha: report.fecha, unidad: report.embarcacion, reason: "missing_date" });
-      return;
+      if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+      continue;
     }
 
     if (!report.embarcacion?.trim()) {
       pendingReports.push({ id: report.id, tipo: "embarcacion", no_reporte: report.no_reporte, fecha: report.fecha, unidad: report.embarcacion, reason: "missing_unit" });
-      return;
+      if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+      continue;
     }
 
     if (!sheetName) {
       pendingReports.push({ id: report.id, tipo: "embarcacion", no_reporte: report.no_reporte, fecha: report.fecha, unidad: report.embarcacion, reason: "missing_sheet" });
-      return;
+      if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+      continue;
     }
 
     const motorHours = [report.horas_motor_babor, report.horas_motor_centro, report.horas_motor_estribor]
@@ -544,7 +553,8 @@ const buildWorkbookPatches = (input: StatisticWorkbookInput, sheetNames: string[
     accumulator.numbers[`${column}53`] = addNullable(accumulator.numbers[`${column}53`], 1);
     mappedReports.set(report.id, { column, sheetName });
     usedReports += 1;
-  });
+    if (performance.now() >= deadline) { await yieldToMain(); deadline = performance.now() + 50; }
+  }
 
   (input.motives || []).forEach((motive) => {
     const reportContext = mappedReports.get(motive.reporte_id);
@@ -594,7 +604,7 @@ const buildWorkbookPatches = (input: StatisticWorkbookInput, sheetNames: string[
   };
 };
 
-export const patchStatisticWorkbookBytes = (templateBytes: Uint8Array, input: StatisticWorkbookInput) => {
+export const patchStatisticWorkbookBytes = async (templateBytes: Uint8Array, input: StatisticWorkbookInput) => {
   const zip = unzipSync(templateBytes);
   const sheets = getWorkbookSheets(zip);
   const stationSheet = sheets.find((sheet) => sheet.name === ESTACION_SHEET_NAME);
@@ -603,7 +613,7 @@ export const patchStatisticWorkbookBytes = (templateBytes: Uint8Array, input: St
     throw new Error("No se encontro la hoja ESTACIÓN en la plantilla de estadistica");
   }
 
-  const patchResult = buildWorkbookPatches(input, sheets.map((sheet) => sheet.name));
+  const patchResult = await buildWorkbookPatches(input, sheets.map((sheet) => sheet.name));
   const stationStartSerial = dateKeyToExcelSerial(input.startDate);
   const stationEndSerial = dateKeyToExcelSerial(input.endDate);
 

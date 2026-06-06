@@ -14,6 +14,7 @@ import {
   type ImportReportCatalogs,
 } from "../src/lib/reportImportCatalogMatching";
 import { reportImportDraftSchema, type ReportImportDraft, type ReportImportField } from "../src/lib/reportImportSchema";
+import { assertAllowedFetchUrl } from "./_lib/fetch-guard";
 
 const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = new Set(["xlsx", "xls"]);
@@ -89,7 +90,9 @@ const supabaseFetch = async (
   authHeader: string,
 ) => {
   const { url, key } = getSupabaseConfig();
-  const response = await fetch(`${url}${path}`, {
+  const target = `${url}${path}`;
+  assertAllowedFetchUrl(target, url);
+  const response = await fetch(target, {
     ...init,
     headers: {
       ...authHeaders(authHeader, key),
@@ -298,7 +301,9 @@ const uploadSnapshot = async (
   authHeader: string,
 ) => {
   const { url, key } = getSupabaseConfig();
-  const response = await fetch(`${url}/storage/v1/object/${SNAPSHOT_BUCKET}/${storagePath}`, {
+  const target = `${url}/storage/v1/object/${SNAPSHOT_BUCKET}/${storagePath}`;
+  assertAllowedFetchUrl(target, url);
+  const response = await fetch(target, {
     method: "PUT",
     headers: {
       "apikey": key,
@@ -502,7 +507,9 @@ const resolveImportNamesWithEdgeFunction = async (
   const timeout = setTimeout(() => controller.abort(), 20_000);
 
   try {
-    const response = await fetch(`${url}/functions/v1/${RESOLVE_IMPORT_NAMES_FUNCTION}`, {
+    const target = `${url}/functions/v1/${RESOLVE_IMPORT_NAMES_FUNCTION}`;
+    assertAllowedFetchUrl(target, url);
+    const response = await fetch(target, {
       method: "POST",
       signal: controller.signal,
       headers: {

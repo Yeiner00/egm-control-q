@@ -36,25 +36,37 @@ export const uploadReportImportFile = async (file: File): Promise<ReportImportDr
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch("/api/report-imports", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  });
-  const payload = await parseApiJson(response).catch((parseError) => {
-    if (response.ok) throw parseError;
-    return null;
-  });
-  if (!response.ok) {
-    throw new Error(payload?.error || "No se pudo importar el reporte");
-  }
-  if (!payload?.data) {
-    throw new Error("El importador V2 respondio sin datos de reporte");
-  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60_000);
+  try {
+    const response = await fetch("/api/report-imports", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+      signal: controller.signal,
+    });
+    const payload = await parseApiJson(response).catch((parseError) => {
+      if (response.ok) throw parseError;
+      return null;
+    });
+    if (!response.ok) {
+      throw new Error(payload?.error || "No se pudo importar el reporte");
+    }
+    if (!payload?.data) {
+      throw new Error("El importador V2 respondio sin datos de reporte");
+    }
 
-  return reportImportDraftSchema.parse(payload.data);
+    return reportImportDraftSchema.parse(payload.data);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("La carga del archivo excedio el tiempo limite de 60 segundos");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 };
 
 export interface PersistReportImportCatalogDecisionInput {
@@ -448,20 +460,33 @@ export const confirmReportImportJob = async (
   const token = sessionData.session?.access_token;
   if (!token) return;
 
-  const response = await fetch(`/api/report-imports/${jobId}/confirm`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      reportId,
-      reportType,
-      aliasSuggestions,
-      personSuggestions,
-      catalogSuggestions,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  let response: Response;
+  try {
+    response = await fetch(`/api/report-imports/${jobId}/confirm`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        reportId,
+        reportType,
+        aliasSuggestions,
+        personSuggestions,
+        catalogSuggestions,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("La confirmacion del importador excedio el tiempo limite de 30 segundos");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) {
     const payload = await parseApiJson(response).catch(() => null);
     throw new Error(payload?.error || "No se pudo confirmar el job de importacion");

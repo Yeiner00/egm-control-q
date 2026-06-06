@@ -324,7 +324,12 @@ const ZarpeTable = ({ refreshKey, onDeleted }: Props) => {
             </thead>
             <tbody>
               {zarpes.map((z) => (
-                <tr key={z.id} className="data-table-row last:border-0">
+                <tr
+                  key={z.id}
+                  className={
+                    "data-table-row last:border-0" + (zarpes.length > 30 ? " deferred-report-region" : "")
+                  }
+                >
                   <td className="whitespace-nowrap p-3 font-semibold text-foreground">{z.zarpe_folio || "-"}</td>
                   <td className="whitespace-nowrap p-3 text-foreground">{z.nombre_embarcacion || "-"}</td>
                   <td className="whitespace-nowrap p-3 text-foreground">{z.nombre_capitan || "-"}</td>

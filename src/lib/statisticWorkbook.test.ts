@@ -9,8 +9,8 @@ const readTemplate = () => readFileSync(join(process.cwd(), "public/templates/es
 const TEST_TIMEOUT = 30_000;
 
 describe("patchStatisticWorkbookBytes", () => {
-  it("fills station dates and unit resource rows while preserving formulas", () => {
-    const patched = patchStatisticWorkbookBytes(readTemplate(), {
+  it("fills station dates and unit resource rows while preserving formulas", async () => {
+    const patched = await patchStatisticWorkbookBytes(readTemplate(), {
       squad: "alfa",
       startDate: "2026-04-01",
       endDate: "2026-04-08",
@@ -132,8 +132,8 @@ describe("patchStatisticWorkbookBytes", () => {
     expect(patched.summary.omittedData.length).toBeGreaterThan(0);
   }, TEST_TIMEOUT);
 
-  it("fills row 24 with deduplicated operational human hours", () => {
-    const patched = patchStatisticWorkbookBytes(readTemplate(), {
+  it("fills row 24 with deduplicated operational human hours", async () => {
+    const patched = await patchStatisticWorkbookBytes(readTemplate(), {
       squad: "alfa",
       startDate: "2026-04-01",
       endDate: "2026-04-08",
@@ -241,8 +241,8 @@ describe("patchStatisticWorkbookBytes", () => {
     expect(patched.summary.omittedData.join(" ")).not.toContain("Fila 24");
   }, TEST_TIMEOUT);
 
-  it("clears stale template resource values for recognized sheets without clearing totals", () => {
-    const patched = patchStatisticWorkbookBytes(readTemplate(), {
+  it("clears stale template resource values for recognized sheets without clearing totals", async () => {
+    const patched = await patchStatisticWorkbookBytes(readTemplate(), {
       squad: "alfa",
       startDate: "2026-04-01",
       endDate: "2026-04-08",
@@ -269,8 +269,8 @@ describe("patchStatisticWorkbookBytes", () => {
     expect(boatSheet.J10.f).toBe("SUM(B10:I10)");
   }, TEST_TIMEOUT);
 
-  it("reports units that cannot be mapped to a workbook sheet", () => {
-    const patched = patchStatisticWorkbookBytes(readTemplate(), {
+  it("reports units that cannot be mapped to a workbook sheet", async () => {
+    const patched = await patchStatisticWorkbookBytes(readTemplate(), {
       squad: "alfa",
       startDate: "2026-04-01",
       endDate: "2026-04-08",
@@ -302,8 +302,8 @@ describe("patchStatisticWorkbookBytes", () => {
     ]);
   }, TEST_TIMEOUT);
 
-  it("marks workbook formulas for recalculation on open", () => {
-    const patched = patchStatisticWorkbookBytes(readTemplate(), {
+  it("marks workbook formulas for recalculation on open", async () => {
+    const patched = await patchStatisticWorkbookBytes(readTemplate(), {
       squad: "bravo",
       startDate: "2026-04-09",
       endDate: "2026-04-16",

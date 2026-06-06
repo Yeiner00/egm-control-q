@@ -324,7 +324,7 @@ const EstadisticaTab = () => {
       people = [...flattenReportPeople(vehiclePeopleMap), ...flattenReportPeople(boatPeopleMap)];
     }
 
-    const baseWorkbook = patchStatisticWorkbookBytes(templateBytes, {
+    const baseWorkbook = await patchStatisticWorkbookBytes(templateBytes, {
       startDate: selectedPeriod.startDate,
       endDate: selectedPeriod.endDate,
       squad: selectedPeriod.squad,
@@ -379,7 +379,7 @@ const EstadisticaTab = () => {
     setStep("review");
   };
 
-  const applyAiJsonText = (jsonText: string, prepared: PreparedStatisticReview) => {
+  const applyAiJsonText = async (jsonText: string, prepared: PreparedStatisticReview) => {
     if (!selectedPeriod) {
       toast.error("Seleccione un periodo");
       return;
@@ -429,7 +429,7 @@ const EstadisticaTab = () => {
         return;
       }
 
-      const patchedWorkbook = patchStatisticWorkbookBytes(prepared.templateBytes, {
+      const patchedWorkbook = await patchStatisticWorkbookBytes(prepared.templateBytes, {
         startDate: selectedPeriod.startDate,
         endDate: selectedPeriod.endDate,
         squad: selectedPeriod.squad,
@@ -512,7 +512,7 @@ const EstadisticaTab = () => {
         });
         const aiJsonText = await invokeStatisticAi(prepared.novedadesJson);
         setAiResponseText(aiJsonText);
-        applyAiJsonText(aiJsonText, prepared);
+        await applyAiJsonText(aiJsonText, prepared);
       }
     } catch (error) {
       setAiProcessingFeedback({
@@ -526,13 +526,13 @@ const EstadisticaTab = () => {
     }
   };
 
-  const processAiResponse = () => {
+  const processAiResponse = async () => {
     if (!templateBytes || !selectedPeriod || !workbookSummary) {
       toast.error("Primero genere la revision");
       return;
     }
 
-    applyAiJsonText(aiResponseText, {
+    await applyAiJsonText(aiResponseText, {
       vehicleReports,
       boatReports,
       motives,

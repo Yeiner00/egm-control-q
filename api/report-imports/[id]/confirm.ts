@@ -5,6 +5,7 @@ import {
   type ReportImportCatalogSuggestion,
   type ReportImportPersonSuggestion,
 } from "../../../src/lib/reportImportSchema";
+import { assertAllowedFetchUrl } from "../../_lib/fetch-guard";
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   Response.json(body, { status });
@@ -68,7 +69,9 @@ const supabaseFetch = async (
   authHeader: string,
 ) => {
   const { url, key } = getSupabaseConfig();
-  const response = await fetch(`${url}${path}`, {
+  const target = `${url}${path}`;
+  assertAllowedFetchUrl(target, url);
+  const response = await fetch(target, {
     ...init,
     headers: {
       ...authHeaders(authHeader, key),
