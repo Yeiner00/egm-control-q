@@ -27,3 +27,9 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Agent skills del usuario (no son parte del proyecto)
+.agents/
+
+# Cache temporal de la CLI de Supabase
+supabase/.temp/
