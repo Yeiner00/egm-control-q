@@ -182,25 +182,6 @@
     background-color: hsl(var(--background));
   }
 
-  .skip-link {
-    position: absolute;
-    top: -100px;
-    left: 1rem;
-    z-index: 1000;
-    padding: 0.5rem 0.75rem;
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border-radius: var(--radius);
-    font-weight: 600;
-    text-decoration: none;
-    transition: top var(--motion-fast) var(--ease-standard);
-  }
-  .skip-link:focus-visible {
-    top: 1rem;
-    outline: 3px solid hsl(var(--ring));
-    outline-offset: 2px;
-  }
-
   ::selection {
     background: hsl(var(--accent) / 0.2);
     color: hsl(var(--foreground));
