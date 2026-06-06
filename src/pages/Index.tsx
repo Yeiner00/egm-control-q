@@ -29,7 +29,6 @@ const EstadisticaTab = lazy(() => import("@/components/EstadisticaTab"));
 
 type AppTab = "inicio" | "zarpes" | "reportes" | "estadisticas" | "estadistica";
 type ReportesSubtab = "manual" | "subir" | "importar" | "catalogos" | "gestionar" | "exportar";
-type ZarpesSubtab = "subir" | "consulta";
 type ReportEditTarget =
   | { tipo: "vehiculo"; reportId: string }
   | { tipo: "embarcacion"; reportId: string };
@@ -67,7 +66,6 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AppTab>("inicio");
   const [reportesSubtabRequest, setReportesSubtabRequest] = useState<SubtabRequest<ReportesSubtab> | null>(null);
-  const [zarpesSubtabRequest, setZarpesSubtabRequest] = useState<SubtabRequest<ZarpesSubtab> | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const workspaceRef = useRef<HTMLElement | null>(null);
   const navigate = useNavigate();
@@ -128,11 +126,6 @@ const Index = () => {
   const openReportesManual = () => {
     setReportesSubtabRequest({ value: "manual", nonce: Date.now() });
     handleTabChange("reportes");
-  };
-
-  const openZarpesUpload = () => {
-    setZarpesSubtabRequest({ value: "subir", nonce: Date.now() });
-    handleTabChange("zarpes");
   };
 
   const openEstadistica = () => {
@@ -253,14 +246,13 @@ const Index = () => {
               <Suspense fallback={<TabFallback />}>
                 <InicioTab
                   onOpenReportesManual={openReportesManual}
-                  onOpenZarpesUpload={openZarpesUpload}
                   onOpenEstadistica={openEstadistica}
                 />
               </Suspense>
             </TabsContent>
             <TabsContent value="zarpes">
               <Suspense fallback={<TabFallback />}>
-                <ZarpesTab subtabRequest={zarpesSubtabRequest} />
+                <ZarpesTab />
               </Suspense>
             </TabsContent>
             <TabsContent value="reportes">

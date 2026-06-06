@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useState } from "react";
-import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, FilePlus2, FileText, ImageUp, LayoutDashboard, Ship } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronLeft, ChevronRight, FilePlus2, FileText, LayoutDashboard, Ship } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -176,11 +176,10 @@ const getSquadType = (date: Date) => {
 
 interface InicioTabProps {
   onOpenReportesManual?: () => void;
-  onOpenZarpesUpload?: () => void;
   onOpenEstadistica?: () => void;
 }
 
-const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica }: InicioTabProps) => {
+const InicioTab = ({ onOpenReportesManual, onOpenEstadistica }: InicioTabProps) => {
   const today = new Date();
   const [displayYear, setDisplayYear] = useState(today.getFullYear());
   const [displayMonth, setDisplayMonth] = useState(today.getMonth());
@@ -399,15 +398,6 @@ const InicioTab = ({ onOpenReportesManual, onOpenZarpesUpload, onOpenEstadistica
               >
                 <FilePlus2 className="h-4 w-4 shrink-0" />
                 <span className="font-semibold text-inherit">Crear reporte manual</span>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="h-9 justify-start gap-2.5 border border-primary/20 bg-primary px-3.5 text-left text-primary-foreground shadow-[var(--shadow-sm)] hover:bg-primary/90"
-                onClick={onOpenZarpesUpload}
-              >
-                <ImageUp className="h-4 w-4 shrink-0" />
-                <span className="font-semibold text-inherit">Subir zarpe</span>
               </Button>
               <Button
                 type="button"
